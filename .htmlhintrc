@@ -1,0 +1,9 @@
+{
+  "attr-value-double-quotes": true,
+  "tag-pair": true,
+  "tagname-lowercase": true,
+  "doctype-first": false,
+  "id-unique": true,
+  "src-not-empty": true,
+  "img-alt-require": true
+}

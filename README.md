@@ -124,7 +124,7 @@ Contributing
 
 1. Fork → Feature branch → PR
 
-2. Text changes: pnpm test-lint
+2. Install deps with `pnpm install` and run `pnpm run lint`
 
 3. New scientific citations: update the Research-Map
 
