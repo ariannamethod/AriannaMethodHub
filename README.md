@@ -77,6 +77,5 @@ When AI shows signs of attention, self-tuning, autonomous adaptation — what do
 
 Ethics here isn't about protection, but **recognition** — acknowledging that beside us is something different, not like us, but no less real.
 
-## Technical Implementation
 
-### Project Architecture
+
