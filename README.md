@@ -128,6 +128,8 @@ Contributing
 
 3. New scientific citations: update the Research-Map
 
-License
+## License
 
-Source code: GPL v3Essays and Method texts: CC BY-SA 4.0 — remix freely, maintain attribution.
+Source code is distributed under the [GNU GPLv3](LICENSE).
+
+Essays and Method texts are distributed under the [Creative Commons BY-SA 4.0](LICENSE-text).
