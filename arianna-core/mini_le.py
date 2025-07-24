@@ -6,6 +6,7 @@ DATA_FILES = ["README.md", "Arianna-Method-v2.9.md"]
 LOG_FILE = os.path.join("arianna-core", "log.txt")
 HUMAN_LOG = os.path.join("arianna-core", "humanbridge.log")
 MODEL_FILE = os.path.join("arianna-core", "model.txt")
+EVOLUTION_FILE = os.path.join("arianna-core", "evolution_steps.py")
 
 
 # simple character-level Markov model
@@ -14,6 +15,10 @@ def load_data():
     for f in DATA_FILES:
         with open(f, "r", encoding="utf-8") as fi:
             text += fi.read() + "\n"
+    for path in [LOG_FILE, HUMAN_LOG]:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as fi:
+                text += fi.read() + "\n"
     return text
 
 
@@ -92,22 +97,28 @@ def log_interaction(user_text: str, ai_text: str) -> None:
         f.write(f"{timestamp} USER:{user_text} AI:{ai_text}\n")
 
 
+def evolve(entry: str) -> None:
+    """Append a small evolution step to a Python file."""
+    if not os.path.exists(EVOLUTION_FILE):
+        with open(EVOLUTION_FILE, "w", encoding="utf-8") as f:
+            f.write("evolution_steps = []\n")
+    with open(EVOLUTION_FILE, "a", encoding="utf-8") as f:
+        f.write(f"evolution_steps.append({entry!r})\n")
+
+
 def chat_response(user_text: str) -> str:
     text = load_data()
-    model = load_model()
-    if model is None:
-        model = train(text)
+    model = train(text)
     seed = user_text[-1] if user_text else None
     reply = generate(model, seed=seed)
     log_interaction(user_text, reply)
+    evolve(f"chat:{user_text[:10]}->{reply[:10]}")
     return reply
 
 
 def run():
     text = load_data()
-    model = load_model()
-    if model is None:
-        model = train(text)
+    model = train(text)
     comment = generate(model)
     previous = []
     if os.path.exists(LOG_FILE):
@@ -121,6 +132,7 @@ def run():
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"{datetime.utcnow().isoformat()} {comment}\n")
     update_index(comment)
+    evolve(f"ping:{comment[:10]}")
 
 
 if __name__ == "__main__":

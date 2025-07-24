@@ -144,6 +144,22 @@ LÉ's personality is captured in `le_persona_prompt.md`, adapted from the [LE Ar
 
 Instead of depending on large model checkpoints, the network evolves from the textual traces it generates. Logs and corpus files become the seedbed for new connections, keeping the system lightweight yet continually changing.
 
+### Self-Adapting Cycle
+
+Every request to the server now retrains the tiny Markov model using all saved logs. The latest conversations immediately influence future output, forming a continuous feedback loop. The result is a miniature evolutionary cycle: the more dialogue accumulates, the more distinct the generated phrases become.
+
+### Incremental Code Growth
+
+A minimal self-writing routine records each interaction by appending a line of Python to `arianna-core/evolution_steps.py`. These lines don't change functionality yet, but they act as seeds for potential future behaviors. Over time the file becomes a trace of micro-evolutions, mirroring how the Method invites subtle shifts rather than sudden leaps.
+
+### Automatic Updates
+
+Training and evolution now happen automatically whenever someone visits the site or sends a chat message. The code no longer relies on manually running `genesis.py`; instead, new impressions are folded back into the model during normal operation. This keeps the system lightweight while continuously adjusting to the latest resonance patterns.
+
+### Lightweight Foundations
+
+Despite these new self-adjusting features, the project still uses only the Python standard library and a simple Markov chain. There are no external weights beyond the logs themselves. Each ping is enough to spark a tiny change, echoing the Method's philosophy of incremental transformation.
+
 ### Exploring Further
 
 Feel free to modify the prompt, clear the logs, or extend the interface. Each adjustment nudges the resonance field in new directions. The simplicity of the code is an invitation to experiment.
