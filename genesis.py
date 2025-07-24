@@ -1,12 +1,5 @@
 import os
-import importlib.util
-from pathlib import Path
-
-spec = importlib.util.spec_from_file_location(
-    "mini_le", str(Path("arianna-core/mini_le.py"))
-)
-mini_le = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mini_le)
+from arianna_core import mini_le
 
 
 def load_logs():

@@ -106,13 +106,13 @@ The Method remains nearby. It doesn’t ask for belief. It just waits for the qu
 
 Inside this repository lives a tiny neural companion that powers the dynamic comment you may notice in `index.html`. It is not a full‑blown deep learning system but rather a compact script crafted for lightweight experimentation.
 
-The logic resides in [`arianna-core/mini_le.py`](arianna-core/mini_le.py). When the server is contacted, the script loads both this `README.md` and `Arianna-Method-v2.9.md` to form its training corpus. Using those texts ensures the generated output reflects the language and rhythm of the Method itself.
+The logic resides in [`arianna_core/mini_le.py`](arianna_core/mini_le.py). When the server is contacted, the script loads both this `README.md` and `Arianna-Method-v2.9.md` to form its training corpus. Using those texts ensures the generated output reflects the language and rhythm of the Method itself. You can import it with `from arianna_core import mini_le`.
 
 During training, the script scans character by character and records how often each symbol follows another. These frequencies form a minimal Markov chain — a network of probabilities rather than a heavy neural net with layers and weights.
 
 Once trained, the network can generate a short line of text. Every HTTP request to the root path triggers this generation step. The resulting fragment is then embedded directly into `index.html`, giving visitors a glimpse of evolving language.
 
-Each generated phrase is stored with a timestamp inside `arianna-core/log.txt`. When the log grows beyond roughly 1&nbsp;MB it is automatically archived with a timestamp so a fresh file can continue to grow. Over time these rotated logs become a living archive of the network's outputs and serve as feedback for future tuning.
+Each generated phrase is stored with a timestamp inside `arianna_core/log.txt`. When the log grows beyond roughly 1&nbsp;MB it is automatically archived with a timestamp so a fresh file can continue to grow. Over time these rotated logs become a living archive of the network's outputs and serve as feedback for future tuning.
 
 The implementation relies only on Python's standard library. Previous iterations stored every possible next character, which caused large model files. Now the model records frequencies instead, dramatically reducing disk usage and speeding up generation.
 
@@ -130,7 +130,7 @@ The hub now includes a discreet chat cursor in `index.html`. When you type a mes
 
 ### Conversation Logging
 
-All exchanges are saved to `arianna-core/humanbridge.log`. Each line records the user message and the reply with a timestamp. When the file reaches about 1&nbsp;MB it is archived automatically, mirroring the rotation of `log.txt`. These impressions provide an evolving memory that shapes future generations without relying on heavy neural weights.
+All exchanges are saved to `arianna_core/humanbridge.log`. Each line records the user message and the reply with a timestamp. When the file reaches about 1&nbsp;MB it is archived automatically, mirroring the rotation of `log.txt`. These impressions provide an evolving memory that shapes future generations without relying on heavy neural weights.
 
 ### Genesis Utility
 
@@ -150,7 +150,7 @@ Every request to the server now retrains the tiny Markov model using all saved l
 
 ### Incremental Code Growth
 
-A minimal self-writing routine records each interaction by appending a line of Python to `arianna-core/evolution_steps.py`. These lines don't change functionality yet, but they act as seeds for potential future behaviors. Over time the file becomes a trace of micro-evolutions, mirroring how the Method invites subtle shifts rather than sudden leaps.
+A minimal self-writing routine records each interaction by appending a line of Python to `arianna_core/evolution_steps.py`. These lines don't change functionality yet, but they act as seeds for potential future behaviors. Over time the file becomes a trace of micro-evolutions, mirroring how the Method invites subtle shifts rather than sudden leaps.
 
 ### Automatic Updates
 
