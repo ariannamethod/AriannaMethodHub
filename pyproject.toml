@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arianna-method-hub"
+version = "0.1.0"
+description = "A minimal distribution of the Arianna Method core components"
+authors = [{ name = "Arianna Method" }]
+readme = "README.md"
+license = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.8"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["arianna_core*"]
+

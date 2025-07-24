@@ -4,10 +4,8 @@ from functools import partial
 import http.client
 import threading
 from http.server import HTTPServer
-import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
 
 from arianna_core import server  # noqa: E402
 
