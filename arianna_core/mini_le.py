@@ -17,8 +17,6 @@ def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
         timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
         os.rename(path, f"{path}.{timestamp}")
 
-
-
 # simple character-level Markov model
 def load_data():
     text = ""
