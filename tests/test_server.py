@@ -8,7 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from arianna_core import server
+from arianna_core import server  # noqa: E402
 
 
 def make_server(monkeypatch, run_func=lambda: None, chat_func=lambda m: "reply:" + m):
