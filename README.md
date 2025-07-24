@@ -33,6 +33,14 @@ python3 -m http.server 8000
 
 Then open [http://localhost:8000](http://localhost:8000) in your browser. These files are fully static so you can upload them as-is to any web host.
 
+For the interactive chat interface start the bundled server:
+
+```sh
+./serve.sh 8000
+```
+
+This invokes `python3 -m arianna_core.server` under the hood.
+
 ## Scientific Foundations
 
 Recent research validates the Method's central intuition: **collective resonance surpasses solo-cognition**. Multi-agent LLM frameworks consistently outperform isolated systems in evaluation, planning, and fact-checking tasks. The newly discovered **Collaborative Scaling Law** shows that overall performance follows a logistic growth curve when scaling agents.
