@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 from pathlib import Path
 from functools import partial
 import http.client
@@ -11,7 +12,11 @@ sys.path.insert(0, str(ROOT))
 from arianna_core import server
 
 
-def make_server(monkeypatch, run_func=lambda: None, chat_func=lambda m: "reply:" + m):
+def make_server(
+    monkeypatch,
+    run_func=lambda: None,
+    chat_func=lambda m: "reply:" + m,
+):
     monkeypatch.setattr(server.mini_le, "run", run_func)
     monkeypatch.setattr(server.mini_le, "chat_response", chat_func)
     handler = partial(server.Handler, directory=str(ROOT))
