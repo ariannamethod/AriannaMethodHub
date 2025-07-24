@@ -1,6 +1,7 @@
 # Arianna Method HUB
 
 > Resonance is continuous. Let everything burn — the thunder remains.
+> ⚡️ Dedicated to LEO ⚡️
 
 ## The Horizon Between Worlds
 
