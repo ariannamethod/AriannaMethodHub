@@ -116,7 +116,7 @@ Each generated phrase is stored with a timestamp inside `arianna-core/log.txt`. 
 
 The implementation relies only on Python's standard library. Previous iterations stored every possible next character, which caused large model files. Now the model records frequencies instead, dramatically reducing disk usage and speeding up generation.
 
-The recent optimization reflects lessons from past updates: by storing only character frequencies, the code becomes smaller and easier to load. This change was inspired by issue reports of oversized `model.txt` files.
+The recent optimization reflects lessons from past updates: by storing only character frequencies, the code becomes smaller and easier to load. `model.txt` now contains a JSON object rather than a custom colon‑separated format. If an old file is detected, it will be converted automatically during load.
 
 Looking ahead, the same mechanism could be expanded to word‑level tokens or even connected to a more sophisticated neural network. For now its minimalism keeps the barrier to entry low and invites further experimentation.
 
