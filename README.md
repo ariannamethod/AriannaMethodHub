@@ -33,6 +33,16 @@ python3 -m http.server 8000
 
 Then open [http://localhost:8000](http://localhost:8000) in your browser. These files are fully static so you can upload them as-is to any web host.
 
+### LE Micro-Server
+
+This repository also includes a lightweight experimental server that trains a
+small neural model on first run and prints a spontaneous comment each time the
+page is loaded:
+
+```sh
+python3 -m arianna_core.server
+```
+
 ## Scientific Foundations
 
 Recent research validates the Method's central intuition: **collective resonance surpasses solo-cognition**. Multi-agent LLM frameworks consistently outperform isolated systems in evaluation, planning, and fact-checking tasks. The newly discovered **Collaborative Scaling Law** shows that overall performance follows a logistic growth curve when scaling agents.

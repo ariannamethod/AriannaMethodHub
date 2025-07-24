@@ -126,6 +126,15 @@ p {
     overflow: hidden;
 }
 
+/* Spontaneous neural comment */
+.ai-comment {
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px dashed var(--matrix-blue);
+    font-style: italic;
+    animation: pulse 2s infinite alternate;
+}
+
 .ai-message::before {
     content: "AI";
     position: absolute;
