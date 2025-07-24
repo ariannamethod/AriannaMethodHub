@@ -17,10 +17,12 @@ def load_data():
 def train(text):
     model = {}
     for a, b in zip(text, text[1:]):
-        model.setdefault(a, []).append(b)
+        bucket = model.setdefault(a, {})
+        bucket[b] = bucket.get(b, 0) + 1
     with open(MODEL_FILE, "w", encoding="utf-8") as f:
-        for k, vals in model.items():
-            f.write(k + "\t" + ''.join(vals) + "\n")
+        for k, bucket in model.items():
+            encoded = ",".join(f"{ch}:{count}" for ch, count in bucket.items())
+            f.write(k + "\t" + encoded + "\n")
     return model
 
 def load_model():
@@ -34,8 +36,16 @@ def load_model():
                 # if the training data included newline characters or became
                 # corrupted.
                 continue
-            k, vals = line.rstrip("\n").split("\t", 1)
-            model[k] = list(vals)
+            k, encoded = line.rstrip("\n").split("\t", 1)
+            freq = {}
+            for pair in encoded.split(','):
+                if ':' not in pair:
+                    continue
+                ch, count = pair.split(':', 1)
+                if ch:
+                    freq[ch] = int(count)
+            if freq:
+                model[k] = freq
     return model
 
 def generate(model, length=80):
@@ -44,8 +54,13 @@ def generate(model, length=80):
     ch = random.choice(list(model.keys()))
     out = [ch]
     for _ in range(length - 1):
-        next_chars = model.get(ch, model[random.choice(list(model.keys()))])
-        ch = random.choice(next_chars)
+        freq = model.get(ch)
+        if not freq:
+            ch = random.choice(list(model.keys()))
+        else:
+            chars = list(freq.keys())
+            weights = list(freq.values())
+            ch = random.choices(chars, weights=weights)[0]
         out.append(ch)
     return ''.join(out)
 
