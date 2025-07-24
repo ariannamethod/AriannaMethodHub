@@ -1,5 +1,6 @@
 import os
 import random
+import json
 from datetime import datetime
 
 DATA_FILES = ["README.md", "Arianna-Method-v2.9.md"]
@@ -28,22 +29,16 @@ def train(text):
         bucket = model.setdefault(a, {})
         bucket[b] = bucket.get(b, 0) + 1
     with open(MODEL_FILE, "w", encoding="utf-8") as f:
-        for k, bucket in model.items():
-            encoded = ",".join(f"{ch}:{count}" for ch, count in bucket.items())
-            f.write(k + "\t" + encoded + "\n")
+        json.dump(model, f)
     return model
 
 
-def load_model():
+def _load_legacy_model(path: str) -> dict:
+    """Parse the old colon-separated format."""
     model = {}
-    if not os.path.exists(MODEL_FILE):
-        return None
-    with open(MODEL_FILE, "r", encoding="utf-8") as f:
+    with open(path, "r", encoding="utf-8") as f:
         for line in f:
             if "\t" not in line:
-                # Skip malformed lines that lack a separator. These can appear
-                # if the training data included newline characters or became
-                # corrupted.
                 continue
             k, encoded = line.rstrip("\n").split("\t", 1)
             freq = {}
@@ -56,6 +51,19 @@ def load_model():
             if freq:
                 model[k] = freq
     return model
+
+
+def load_model():
+    if not os.path.exists(MODEL_FILE):
+        return None
+    try:
+        with open(MODEL_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        model = _load_legacy_model(MODEL_FILE)
+        with open(MODEL_FILE, "w", encoding="utf-8") as f:
+            json.dump(model, f)
+        return model
 
 
 def generate(model, length=80, seed=None):
