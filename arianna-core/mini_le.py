@@ -8,6 +8,15 @@ LOG_FILE = os.path.join("arianna-core", "log.txt")
 HUMAN_LOG = os.path.join("arianna-core", "humanbridge.log")
 MODEL_FILE = os.path.join("arianna-core", "model.txt")
 EVOLUTION_FILE = os.path.join("arianna-core", "evolution_steps.py")
+LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
+
+
+def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
+    """Rotate the given log file if it exceeds ``max_bytes``."""
+    if os.path.exists(path) and os.path.getsize(path) > max_bytes:
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        os.rename(path, f"{path}.{timestamp}")
+
 
 
 # simple character-level Markov model
@@ -100,6 +109,7 @@ def update_index(comment):
 
 
 def log_interaction(user_text: str, ai_text: str) -> None:
+    rotate_log(HUMAN_LOG, LOG_MAX_BYTES)
     with open(HUMAN_LOG, "a", encoding="utf-8") as f:
         timestamp = datetime.utcnow().isoformat()
         f.write(f"{timestamp} USER:{user_text} AI:{ai_text}\n")
@@ -137,6 +147,7 @@ def run():
     while comment in previous and attempts < 5:
         comment = generate(model)
         attempts += 1
+    rotate_log(LOG_FILE, LOG_MAX_BYTES)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"{datetime.utcnow().isoformat()} {comment}\n")
     update_index(comment)

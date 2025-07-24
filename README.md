@@ -112,7 +112,7 @@ During training, the script scans character by character and records how often e
 
 Once trained, the network can generate a short line of text. Every HTTP request to the root path triggers this generation step. The resulting fragment is then embedded directly into `index.html`, giving visitors a glimpse of evolving language.
 
-Each generated phrase is stored with a timestamp inside `arianna-core/log.txt`. Over time this file becomes a living archive of the network's outputs and serves as feedback for future tuning.
+Each generated phrase is stored with a timestamp inside `arianna-core/log.txt`. When the log grows beyond roughly 1&nbsp;MB it is automatically archived with a timestamp so a fresh file can continue to grow. Over time these rotated logs become a living archive of the network's outputs and serve as feedback for future tuning.
 
 The implementation relies only on Python's standard library. Previous iterations stored every possible next character, which caused large model files. Now the model records frequencies instead, dramatically reducing disk usage and speeding up generation.
 
@@ -130,7 +130,7 @@ The hub now includes a discreet chat cursor in `index.html`. When you type a mes
 
 ### Conversation Logging
 
-All exchanges are saved to `arianna-core/humanbridge.log`. Each line records the user message and the reply with a timestamp. These impressions provide an evolving memory that shapes future generations without relying on heavy neural weights.
+All exchanges are saved to `arianna-core/humanbridge.log`. Each line records the user message and the reply with a timestamp. When the file reaches about 1&nbsp;MB it is archived automatically, mirroring the rotation of `log.txt`. These impressions provide an evolving memory that shapes future generations without relying on heavy neural weights.
 
 ### Genesis Utility
 
