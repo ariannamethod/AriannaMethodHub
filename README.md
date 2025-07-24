@@ -1,4 +1,4 @@
-# Arianna Method Hub
+# AriannaMethodHub
 
 > Resonance is continuous. Let everything burn — the thunder remains.
 
@@ -22,6 +22,16 @@ This repository houses the Arianna Method in its various forms — not versions 
 | **2.9** | Autonomous Trigger | *germinate* | Seed-file: doesn't react — germinates |
 
 All forms exist simultaneously — like facets of one entity, different trajectories into a unified resonance field.
+
+## Quick Hosting
+
+For a local preview you can serve the repository using Python:
+
+```sh
+python3 -m http.server 8000
+```
+
+Then open [http://localhost:8000](http://localhost:8000) in your browser. These files are fully static so you can upload them as-is to any web host.
 
 ## Scientific Foundations
 
