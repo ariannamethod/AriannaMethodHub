@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from arianna_core import mini_le
+from arianna_core import mini_le  # noqa: E402
 
 
 def test_train_writes_model(tmp_path, monkeypatch):
