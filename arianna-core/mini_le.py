@@ -29,7 +29,12 @@ def load_model():
         return None
     with open(MODEL_FILE, "r", encoding="utf-8") as f:
         for line in f:
-            k, vals = line.rstrip().split("\t")
+            if "\t" not in line:
+                # Skip malformed lines that lack a separator. These can appear
+                # if the training data included newline characters or became
+                # corrupted.
+                continue
+            k, vals = line.rstrip("\n").split("\t", 1)
             model[k] = list(vals)
     return model
 
