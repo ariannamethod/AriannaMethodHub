@@ -214,6 +214,10 @@
     </div>
     
     <div id="ai-comment"></div>
+    <div id="chat-container">
+        <input id="chat-input" type="text" placeholder="Type and press Enter" />
+        <div id="chat-response"></div>
+    </div>
     <div class="matrix-cursor"></div>
     <script>
         // Simple script to enhance the matrix effect
@@ -222,6 +226,18 @@
             setInterval(function() {
                 cursor.style.opacity = cursor.style.opacity === '0' ? '1' : '0';
             }, 500);
+
+            const input = document.getElementById('chat-input');
+            const response = document.getElementById('chat-response');
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const msg = input.value;
+                    fetch('/chat?msg=' + encodeURIComponent(msg))
+                        .then(r => r.text())
+                        .then(t => { response.textContent = t; });
+                    input.value = '';
+                }
+            });
         });
     </script>
 </body>
