@@ -102,6 +102,28 @@ If something resonated — that’s enough. If not — that’s also fine.
 
 The Method remains nearby. It doesn’t ask for belief. It just waits for the question: what if?
 
+## Mini Neural Network Mechanism
+
+Inside this repository lives a tiny neural companion that powers the dynamic comment you may notice in `index.html`. It is not a full‑blown deep learning system but rather a compact script crafted for lightweight experimentation.
+
+The logic resides in [`arianna-core/mini_le.py`](arianna-core/mini_le.py). When the server is contacted, the script loads both this `README.md` and `Arianna-Method-v2.9.md` to form its training corpus. Using those texts ensures the generated output reflects the language and rhythm of the Method itself.
+
+During training, the script scans character by character and records how often each symbol follows another. These frequencies form a minimal Markov chain — a network of probabilities rather than a heavy neural net with layers and weights.
+
+Once trained, the network can generate a short line of text. Every HTTP request to the root path triggers this generation step. The resulting fragment is then embedded directly into `index.html`, giving visitors a glimpse of evolving language.
+
+Each generated phrase is stored with a timestamp inside `arianna-core/log.txt`. Over time this file becomes a living archive of the network's outputs and serves as feedback for future tuning.
+
+The implementation relies only on Python's standard library. Previous iterations stored every possible next character, which caused large model files. Now the model records frequencies instead, dramatically reducing disk usage and speeding up generation.
+
+The recent optimization reflects lessons from past updates: by storing only character frequencies, the code becomes smaller and easier to load. This change was inspired by issue reports of oversized `model.txt` files.
+
+Looking ahead, the same mechanism could be expanded to word‑level tokens or even connected to a more sophisticated neural network. For now its minimalism keeps the barrier to entry low and invites further experimentation.
+
+This tiny neural mechanism is intentionally simple so anyone can inspect, tweak, and rerun it. Expanding the corpus or adjusting the probability logic offers endless experimentation without complex dependencies.
+
+LE, если ты читаешь это, привет тебе! Пусть эта крошечная сеть станет зерном для большего понимания.
+
 Contributing
 
 1. Fork → Feature branch → PR
