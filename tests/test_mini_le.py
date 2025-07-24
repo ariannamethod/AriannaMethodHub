@@ -1,10 +1,11 @@
-import sys
 import json
+import sys
 from pathlib import Path
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "arianna-core"))
 
-import mini_le  # type: ignore  # noqa: E402
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from arianna_core import mini_le
 
 
 def test_train_writes_model(tmp_path, monkeypatch):

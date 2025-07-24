@@ -1,14 +1,14 @@
-import sys
 from pathlib import Path
 from functools import partial
 import http.client
 import threading
 from http.server import HTTPServer
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "arianna-core"))
+sys.path.insert(0, str(ROOT))
 
-import server  # type: ignore  # noqa: E402
+from arianna_core import server
 
 
 def make_server(monkeypatch, run_func=lambda: None, chat_func=lambda m: "reply:" + m):

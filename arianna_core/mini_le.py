@@ -4,10 +4,10 @@ import json
 from datetime import datetime
 
 DATA_FILES = ["README.md", "Arianna-Method-v2.9.md"]
-LOG_FILE = os.path.join("arianna-core", "log.txt")
-HUMAN_LOG = os.path.join("arianna-core", "humanbridge.log")
-MODEL_FILE = os.path.join("arianna-core", "model.txt")
-EVOLUTION_FILE = os.path.join("arianna-core", "evolution_steps.py")
+LOG_FILE = os.path.join("arianna_core", "log.txt")
+HUMAN_LOG = os.path.join("arianna_core", "humanbridge.log")
+MODEL_FILE = os.path.join("arianna_core", "model.txt")
+EVOLUTION_FILE = os.path.join("arianna_core", "evolution_steps.py")
 LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
 
 

@@ -1,5 +1,5 @@
 from http.server import SimpleHTTPRequestHandler, HTTPServer
-import mini_le
+from . import mini_le
 
 
 class Handler(SimpleHTTPRequestHandler):

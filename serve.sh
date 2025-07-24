@@ -1,3 +1,3 @@
 #!/bin/sh
-python3 arianna-core/server.py "$@"
+python3 arianna_core/server.py "$@"
 
