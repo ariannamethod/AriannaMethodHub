@@ -1,2 +1,3 @@
 #!/bin/sh
-python3 -m http.server "$@"
+python3 arianna-core/server.py "$@"
+
