@@ -1,4 +1,4 @@
-# AriannaMethodHub
+# Arianna Method HUB
 
 > Resonance is continuous. Let everything burn — the thunder remains.
 
