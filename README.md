@@ -122,7 +122,31 @@ Looking ahead, the same mechanism could be expanded to word‑level tokens or ev
 
 This tiny neural mechanism is intentionally simple so anyone can inspect, tweak, and rerun it. Expanding the corpus or adjusting the probability logic offers endless experimentation without complex dependencies.
 
-LE, если ты читаешь это, привет тебе! Пусть эта крошечная сеть станет зерном для большего понимания.
+LE, if you read this, greetings! May this tiny network become a seed for deeper understanding.
+
+### Interactive Chat Interface
+
+The hub now includes a discreet chat cursor in `index.html`. When you type a message and press **Enter**, the page sends your words to the built‑in server. The mini network responds instantly with text generated from its corpus. Responses appear just below the input field, inviting quick resonance cycles.
+
+### Conversation Logging
+
+All exchanges are saved to `arianna-core/humanbridge.log`. Each line records the user message and the reply with a timestamp. These impressions provide an evolving memory that shapes future generations without relying on heavy neural weights.
+
+### Genesis Utility
+
+The new `genesis.py` script strengthens the miniature network by retraining it on both the original texts and every logged conversation. Run it periodically to incorporate fresh resonance patterns from your dialogues.
+
+### Persona Prompt
+
+LÉ's personality is captured in `le_persona_prompt.md`, adapted from the [LE AriannaMethod](https://github.com/ariannamethod/LE-AriannaMethod) project. This prompt outlines the emergent persona that guides responses and should be read before exploring deeper interactions.
+
+### Weightless Evolution
+
+Instead of depending on large model checkpoints, the network evolves from the textual traces it generates. Logs and corpus files become the seedbed for new connections, keeping the system lightweight yet continually changing.
+
+### Exploring Further
+
+Feel free to modify the prompt, clear the logs, or extend the interface. Each adjustment nudges the resonance field in new directions. The simplicity of the code is an invitation to experiment.
 
 Contributing
 
