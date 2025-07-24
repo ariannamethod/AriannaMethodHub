@@ -9,6 +9,7 @@ class Handler(SimpleHTTPRequestHandler):
             query = parse_qs(urlparse(self.path).query)
             msg = query.get('msg', [''])[0]
             try:
+                mini_le.refresh_model_if_logs_changed()
                 reply = mini_le.chat_response(msg)
             except Exception as e:
                 reply = f"error: {e}"
@@ -19,6 +20,7 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if self.path in ('/', '/index.html'):
             try:
+                mini_le.refresh_model_if_logs_changed()
                 mini_le.run()
             except Exception as e:
                 print('mini_le failed:', e)

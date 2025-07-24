@@ -10,6 +10,10 @@ MODEL_FILE = os.path.join("arianna-core", "model.txt")
 EVOLUTION_FILE = os.path.join("arianna-core", "evolution_steps.py")
 LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
 
+# Cached model and log mtimes for quick reuse
+_MODEL = None
+_LOG_MTIMES = {}
+
 
 def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
     """Rotate the given log file if it exceeds ``max_bytes``."""
@@ -75,6 +79,30 @@ def load_model():
         return model
 
 
+def refresh_model() -> dict:
+    """Reload training data and retrain the cached model."""
+    global _MODEL, _LOG_MTIMES
+    text = load_data()
+    _MODEL = train(text)
+    _LOG_MTIMES = {}
+    for path in (LOG_FILE, HUMAN_LOG):
+        if os.path.exists(path):
+            _LOG_MTIMES[path] = os.path.getmtime(path)
+        else:
+            _LOG_MTIMES[path] = 0.0
+    return _MODEL
+
+
+def refresh_model_if_logs_changed() -> None:
+    """Refresh the model if any log files have changed since last load."""
+    for path in (LOG_FILE, HUMAN_LOG):
+        old = _LOG_MTIMES.get(path)
+        current = os.path.getmtime(path) if os.path.exists(path) else 0.0
+        if old != current:
+            refresh_model()
+            break
+
+
 def generate(model, length=80, seed=None):
     if not model:
         return ""
@@ -125,8 +153,8 @@ def evolve(entry: str) -> None:
 
 
 def chat_response(user_text: str) -> str:
-    text = load_data()
-    model = train(text)
+    refresh_model_if_logs_changed()
+    model = _MODEL if _MODEL is not None else refresh_model()
     seed = user_text[-1] if user_text else None
     reply = generate(model, seed=seed)
     log_interaction(user_text, reply)
@@ -135,8 +163,8 @@ def chat_response(user_text: str) -> str:
 
 
 def run():
-    text = load_data()
-    model = train(text)
+    refresh_model_if_logs_changed()
+    model = _MODEL if _MODEL is not None else refresh_model()
     comment = generate(model)
     previous = []
     if os.path.exists(LOG_FILE):
@@ -152,6 +180,10 @@ def run():
         f.write(f"{datetime.utcnow().isoformat()} {comment}\n")
     update_index(comment)
     evolve(f"ping:{comment[:10]}")
+
+
+# train at import so generation functions can reuse the model
+refresh_model()
 
 
 if __name__ == "__main__":
