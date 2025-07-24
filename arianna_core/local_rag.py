@@ -1,0 +1,49 @@
+import re
+from typing import List, Tuple
+
+
+def _tokenize(text: str) -> List[str]:
+    """Return a list of lowercase words."""
+    return re.findall(r"\b\w+\b", text.lower())
+
+
+def _vectorize(tokens: List[str]) -> dict:
+    vec = {}
+    for t in tokens:
+        vec[t] = vec.get(t, 0) + 1
+    return vec
+
+
+def _dot(v1: dict, v2: dict) -> float:
+    return sum(v1.get(k, 0) * v2.get(k, 0) for k in v1)
+
+
+class SimpleSearch:
+    """Lightweight in-memory search over text snippets."""
+
+    def __init__(self, snippets: List[str]):
+        self.snippets = snippets
+        self.vectors = [_vectorize(_tokenize(s)) for s in snippets]
+
+    def query(self, text: str, top_k: int = 3) -> List[str]:
+        qvec = _vectorize(_tokenize(text))
+        scored: List[Tuple[str, float]] = [
+            (snippet, _dot(vec, qvec))
+            for snippet, vec in zip(self.snippets, self.vectors)
+        ]
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return [s for s, score in scored[:top_k] if score > 0]
+
+
+def load_snippets(paths: List[str]) -> List[str]:
+    """Load documents and split into paragraphs."""
+    snippets: List[str] = []
+    for path in paths:
+        with open(path, "r", encoding="utf-8") as f:
+            text = f.read()
+        for para in text.split("\n\n"):
+            para = para.strip()
+            if para:
+                snippets.append(para)
+    return snippets
+
