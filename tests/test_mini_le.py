@@ -1,5 +1,6 @@
 import json
 import sys
+import threading
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,3 +34,53 @@ def test_log_rotation(tmp_path, monkeypatch):
     rotated = list(tmp_path.glob("human.log.*"))
     assert len(rotated) == 1
     assert log.read_text(encoding="utf-8").endswith("AI:ok\n")
+
+
+def test_log_interaction_thread_safety(tmp_path, monkeypatch):
+    log = tmp_path / "human.log"
+    monkeypatch.setattr(mini_le, "HUMAN_LOG", str(log))
+    monkeypatch.setattr(mini_le, "LOG_MAX_BYTES", 1_000_000)
+    monkeypatch.setattr(mini_le, "rotate_log", lambda *a, **kw: None)
+
+    threads = []
+    for i in range(5):
+        t = threading.Thread(
+            target=mini_le.log_interaction,
+            args=(f"u{i}", f"a{i}"),
+            name=f"t{i}",
+        )
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+
+    lines = log.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 5
+    parts = {line.split(" ", 1)[1] for line in lines}
+    expected = {f"USER:u{i} AI:a{i}" for i in range(5)}
+    assert parts == expected
+
+
+def test_run_thread_safety(tmp_path, monkeypatch):
+    log = tmp_path / "log.txt"
+    monkeypatch.setattr(mini_le, "LOG_FILE", str(log))
+    monkeypatch.setattr(mini_le, "rotate_log", lambda *a, **kw: None)
+    monkeypatch.setattr(mini_le, "update_index", lambda comment: None)
+    monkeypatch.setattr(mini_le, "evolve", lambda entry: None)
+    monkeypatch.setattr(mini_le, "load_data", lambda: "")
+    monkeypatch.setattr(mini_le, "train", lambda text: {})
+    monkeypatch.setattr(
+        mini_le,
+        "generate",
+        lambda *a, **kw: f"cmt-{threading.get_ident()}",
+    )
+
+    threads = [threading.Thread(target=mini_le.run, name=f"r{i}") for i in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    lines = log.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 5
+    assert len(set(lines)) == 5

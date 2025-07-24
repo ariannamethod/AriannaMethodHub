@@ -1,6 +1,7 @@
 import os
 import random
 import json
+import fcntl
 from datetime import datetime
 
 DATA_FILES = ["README.md", "Arianna-Method-v2.9.md"]
@@ -16,6 +17,16 @@ def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
     if os.path.exists(path) and os.path.getsize(path) > max_bytes:
         timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
         os.rename(path, f"{path}.{timestamp}")
+
+
+def write_with_lock(path: str, text: str) -> None:
+    """Append ``text`` to ``path`` using an exclusive file lock."""
+    with open(path, "a", encoding="utf-8") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            f.write(text)
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
 
 
 
@@ -110,9 +121,11 @@ def update_index(comment):
 
 def log_interaction(user_text: str, ai_text: str) -> None:
     rotate_log(HUMAN_LOG, LOG_MAX_BYTES)
-    with open(HUMAN_LOG, "a", encoding="utf-8") as f:
-        timestamp = datetime.utcnow().isoformat()
-        f.write(f"{timestamp} USER:{user_text} AI:{ai_text}\n")
+    timestamp = datetime.utcnow().isoformat()
+    write_with_lock(
+        HUMAN_LOG,
+        f"{timestamp} USER:{user_text} AI:{ai_text}\n",
+    )
 
 
 def evolve(entry: str) -> None:
@@ -148,8 +161,10 @@ def run():
         comment = generate(model)
         attempts += 1
     rotate_log(LOG_FILE, LOG_MAX_BYTES)
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.utcnow().isoformat()} {comment}\n")
+    write_with_lock(
+        LOG_FILE,
+        f"{datetime.utcnow().isoformat()} {comment}\n",
+    )
     update_index(comment)
     evolve(f"ping:{comment[:10]}")
 
