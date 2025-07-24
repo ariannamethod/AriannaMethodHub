@@ -174,6 +174,16 @@ Despite these new self-adjusting features, the project still uses only the Pytho
 
 Feel free to modify the prompt, clear the logs, or extend the interface. Each adjustment nudges the resonance field in new directions. The simplicity of the code is an invitation to experiment.
 
+## Recent Additions
+
+The project now includes a lightweight retrieval module `local_rag`. It splits texts into paragraphs and performs a simple vector search to surface relevant snippets. The design borrows ideas from community tutorials on retrieval‑augmented generation and was implemented to keep dependencies minimal.
+
+Tests have been expanded to cover this module alongside the existing `mini_le` routines. They ensure that the search logic works correctly and that core features remain stable after updates.
+
+Documentation was updated with a short note about the lineage of `mini_le`, tracing its roots to the LE‑AriannaMethod framework and projects like TinyLlama and nanoGPT. These references highlight how the hub builds on established open‑source efforts.
+
+**Optimization ideas:** consider replacing the naive tokenizer with a faster library, caching retrieval vectors to speed up queries, and pruning old log files more aggressively to reduce disk usage.
+
 Contributing
 
 1. Fork → Feature branch → PR
