@@ -1,7 +1,7 @@
 import os
 import random
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 
 DATA_FILES = ["README.md", "Arianna-Method-v2.9.md"]
 LOG_FILE = os.path.join("arianna_core", "log.txt")
@@ -14,7 +14,7 @@ LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
 def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
     """Rotate the given log file if it exceeds ``max_bytes``."""
     if os.path.exists(path) and os.path.getsize(path) > max_bytes:
-        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
         os.rename(path, f"{path}.{timestamp}")
 
 # simple character-level Markov model
@@ -109,7 +109,7 @@ def update_index(comment):
 def log_interaction(user_text: str, ai_text: str) -> None:
     rotate_log(HUMAN_LOG, LOG_MAX_BYTES)
     with open(HUMAN_LOG, "a", encoding="utf-8") as f:
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         f.write(f"{timestamp} USER:{user_text} AI:{ai_text}\n")
 
 
@@ -147,7 +147,7 @@ def run():
         attempts += 1
     rotate_log(LOG_FILE, LOG_MAX_BYTES)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.utcnow().isoformat()} {comment}\n")
+        f.write(f"{datetime.now(UTC).isoformat()} {comment}\n")
     update_index(comment)
     evolve(f"ping:{comment[:10]}")
 

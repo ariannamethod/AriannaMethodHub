@@ -41,6 +41,22 @@ For the interactive chat interface start the bundled server:
 
 This invokes `python3 -m arianna_core.server` under the hood.
 
+## Development Setup
+
+Install the package in editable mode to work on the code:
+
+```sh
+pip install -e .
+```
+
+Run the automated checks before submitting changes:
+
+```sh
+ruff check .
+pytest
+```
+
+
 ## Scientific Foundations
 
 Recent research validates the Method's central intuition: **collective resonance surpasses solo-cognition**. Multi-agent LLM frameworks consistently outperform isolated systems in evaluation, planning, and fact-checking tasks. The newly discovered **Collaborative Scaling Law** shows that overall performance follows a logistic growth curve when scaling agents.
