@@ -176,6 +176,16 @@ Contributing
 
 1. Fork → Feature branch → PR
 
+## Development
+
+Install the project in editable mode and run the linters and tests:
+
+```sh
+pip install -e .
+ruff check .
+pytest -vv
+```
+
 ## License
 
 Source code is distributed under the [GNU GPLv3](LICENSE).
