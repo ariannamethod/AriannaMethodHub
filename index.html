@@ -3,17 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arianna Terminal</title>
+    <title>Arianna Chat</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="terminal.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="terminal"></div>
-<form id="input-form">
-    <span class="prompt">$</span>
-    <input id="user-input" type="text" autocomplete="off" autofocus />
-    <span class="cursor">_</span>
-</form>
-<script src="terminal.js"></script>
+    <div id="chat-container">
+        <input id="chat-input" type="text" placeholder="Type and press Enter" />
+        <div id="chat-response"></div>
+    </div>
+    <div class="matrix-cursor"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cursor = document.querySelector('.matrix-cursor');
+            setInterval(function() {
+                cursor.style.opacity = cursor.style.opacity === '0' ? '1' : '0';
+            }, 500);
+
+            const input = document.getElementById('chat-input');
+            const response = document.getElementById('chat-response');
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const msg = input.value;
+                    fetch('/chat?msg=' + encodeURIComponent(msg))
+                        .then(r => r.text())
+                        .then(t => { response.textContent = t; });
+                    input.value = '';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
