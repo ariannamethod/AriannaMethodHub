@@ -243,6 +243,25 @@ export PYTHONPATH="$(pwd):$PYTHONPATH"
 pytest -vv
 ```
 
+### nanoGPT Integration (optional)
+
+You can replace the Markov generator with a small
+[nanoGPT](https://github.com/karpathy/nanoGPT) checkpoint. Place a file named
+`nanogpt.pt` in `arianna_core/` and enable the backend with:
+
+```sh
+export ARIANNA_USE_NANOGPT=1
+```
+
+Running `mini_le.py` directly accepts `--nanogpt` to toggle the same flag:
+
+```sh
+python -m arianna_core.mini_le --nanogpt
+```
+
+If the weights or the `torch` dependency are missing, the script falls back to
+its built‑in n‑gram model.
+
 ### Safe Evolution Utility
 
 `evolution_safe.py` keeps experiments reversible. When invoked, it copies the

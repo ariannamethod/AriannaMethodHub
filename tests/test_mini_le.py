@@ -112,15 +112,56 @@ def test_trigram_generation_closer_to_source(tmp_path, monkeypatch):
     assert mismatch(text, gen_tri) <= mismatch(text, gen_bi)
 
 
-def test_generate_fallback_without_nanogpt(monkeypatch):
-    model = {"n": 2, "model": {"a": {"b": 1}, "b": {"a": 1}}}
+def _patch_chat(monkeypatch):
+    monkeypatch.setattr(mini_le, "check_utility_updates", lambda: None)
+    monkeypatch.setattr(mini_le, "_allowed_messages", lambda: 10)
+    monkeypatch.setattr(mini_le, "immune_filter", lambda t: True)
+    monkeypatch.setattr(mini_le, "load_data", lambda: "")
+    monkeypatch.setattr(mini_le, "train", lambda t: {})
+    monkeypatch.setattr(mini_le, "log_interaction", lambda *a, **k: None)
+    monkeypatch.setattr(mini_le, "record_pattern", lambda *a, **k: None)
+    monkeypatch.setattr(mini_le, "evolve", lambda *a, **k: None)
+    monkeypatch.setattr(mini_le, "metabolize_input", lambda t, n=None: 0)
+
+
+def test_chat_response_uses_nanogpt(monkeypatch):
+    calls = {}
+
+    def fake_nano(*args, **kwargs):
+        calls["nano"] = True
+        return "nano"
 
     def fake_generate(*args, **kwargs):
+        calls["generate"] = True
+        return "ngram"
+
+    _patch_chat(monkeypatch)
+    monkeypatch.setattr(mini_le.nanogpt_bridge, "generate", fake_nano)
+    monkeypatch.setattr(mini_le, "generate", fake_generate)
+    mini_le.CHAT_SESSION_COUNT = 0
+    reply = mini_le.chat_response("hi", use_nanogpt=True)
+    assert reply == "nano"
+    assert calls.get("nano") and "generate" not in calls
+
+
+def test_chat_response_nanogpt_fallback(monkeypatch):
+    calls = {}
+
+    def fake_nano(*args, **kwargs):
+        calls["nano"] = True
         return None
 
-    monkeypatch.setattr(mini_le.nanogpt_bridge, "generate", fake_generate)
-    result = mini_le.generate(model, length=3, seed="a")
-    assert result == "aba"
+    def fake_generate(*args, **kwargs):
+        calls["generate"] = True
+        return "fallback"
+
+    _patch_chat(monkeypatch)
+    monkeypatch.setattr(mini_le.nanogpt_bridge, "generate", fake_nano)
+    monkeypatch.setattr(mini_le, "generate", fake_generate)
+    mini_le.CHAT_SESSION_COUNT = 0
+    reply = mini_le.chat_response("hi", use_nanogpt=True)
+    assert reply == "fallback"
+    assert calls.get("nano") and calls.get("generate")
 
 
 def test_backoff_threshold(tmp_path):
