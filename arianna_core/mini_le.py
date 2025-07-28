@@ -1,6 +1,9 @@
 import os
 import random
 import json
+import sqlite3
+import gzip
+import shutil
 from datetime import datetime
 
 from .evolution_safe import evolve_cycle
@@ -11,14 +14,74 @@ LOG_FILE = os.path.join("arianna_core", "log.txt")
 HUMAN_LOG = os.path.join("arianna_core", "humanbridge.log")
 MODEL_FILE = os.path.join("arianna_core", "model.txt")
 EVOLUTION_FILE = os.path.join("arianna_core", "evolution_steps.py")
+MEMORY_DB = os.path.join("arianna_core", "memory.db")
 LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
+NGRAM_SIZE = 2
 
 
 def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
     """Rotate the given log file if it exceeds ``max_bytes``."""
     if os.path.exists(path) and os.path.getsize(path) > max_bytes:
         timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        os.rename(path, f"{path}.{timestamp}")
+        archive = f"{path}.{timestamp}.gz"
+        with open(path, "rb") as src, gzip.open(archive, "wb") as dst:
+            shutil.copyfileobj(src, dst)
+        os.remove(path)
+        with open(path + ".index", "a", encoding="utf-8") as f:
+            f.write(f"{archive}\n")
+
+
+def search_logs(query: str, path: str = HUMAN_LOG) -> list:
+    """Return lines containing ``query`` from current and archived logs."""
+    results = []
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                if query in line:
+                    results.append(line.strip())
+    index = path + ".index"
+    if os.path.exists(index):
+        with open(index, "r", encoding="utf-8") as f:
+            archives = [line.strip() for line in f if line.strip()]
+        for gz in archives:
+            if os.path.exists(gz):
+                with gzip.open(gz, "rt", encoding="utf-8") as gzf:
+                    for line in gzf:
+                        if query in line:
+                            results.append(line.strip())
+    return results
+
+
+def record_pattern(pattern: str) -> None:
+    """Persist ``pattern`` occurrence in the SQLite memory."""
+    conn = sqlite3.connect(MEMORY_DB)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS patterns (pattern TEXT PRIMARY KEY, count INTEGER)"
+    )
+    conn.execute(
+        "INSERT INTO patterns(pattern, count) VALUES(?, 1) "
+        "ON CONFLICT(pattern) DO UPDATE SET count=count+1",
+        (pattern,),
+    )
+    conn.commit()
+    conn.close()
+
+
+def health_report() -> dict:
+    """Return basic health metrics for the system."""
+    report = {
+        "model_exists": os.path.exists(MODEL_FILE),
+        "model_size": os.path.getsize(MODEL_FILE) if os.path.exists(MODEL_FILE) else 0,
+        "log_size": os.path.getsize(LOG_FILE) if os.path.exists(LOG_FILE) else 0,
+        "human_log_size": os.path.getsize(HUMAN_LOG) if os.path.exists(HUMAN_LOG) else 0,
+    }
+    try:
+        model = load_model()
+        sample = generate(model, 20) if model else ""
+        report["generation_ok"] = bool(sample)
+    except Exception:
+        report["generation_ok"] = False
+    return report
 
 # dataset helpers
 def _dataset_snapshot() -> dict:
@@ -71,14 +134,19 @@ def load_data():
     return text
 
 
-def train(text):
+def train(text: str, n: int = NGRAM_SIZE):
+    """Train an ``n``-gram model from ``text``."""
+    if n < 2:
+        n = 2
     model = {}
-    for a, b in zip(text, text[1:]):
-        bucket = model.setdefault(a, {})
-        bucket[b] = bucket.get(b, 0) + 1
+    for i in range(len(text) - n + 1):
+        ctx = text[i : i + n - 1]
+        nxt = text[i + n - 1]
+        bucket = model.setdefault(ctx, {})
+        bucket[nxt] = bucket.get(nxt, 0) + 1
     with open(MODEL_FILE, "w", encoding="utf-8") as f:
-        json.dump(model, f)
-    return model
+        json.dump({"n": n, "model": model}, f)
+    return {"n": n, "model": model}
 
 
 def _load_legacy_model(path: str) -> dict:
@@ -106,29 +174,45 @@ def load_model():
         return None
     try:
         with open(MODEL_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+        return data
     except json.JSONDecodeError:
         model = _load_legacy_model(MODEL_FILE)
         with open(MODEL_FILE, "w", encoding="utf-8") as f:
-            json.dump(model, f)
-        return model
+            json.dump({"n": 2, "model": model}, f)
+        return {"n": 2, "model": model}
 
 
-def generate(model, length=80, seed=None):
+def generate(model, length: int = 80, seed: str | None = None) -> str:
+    """Generate text from a trained model."""
     if not model:
         return ""
-    ch = seed if seed in model else random.choice(list(model.keys()))
-    out = [ch]
-    for _ in range(length - 1):
-        freq = model.get(ch)
+    if "model" in model:
+        n = model.get("n", 2)
+        m = model["model"]
+    else:
+        n = 2
+        m = model
+    context = None
+    if seed:
+        context = seed[-(n - 1) :]
+    if not context or context not in m:
+        context = random.choice(list(m.keys()))
+    out = context
+    for _ in range(length - len(context)):
+        freq = m.get(context)
         if not freq:
-            ch = random.choice(list(model.keys()))
-        else:
-            chars = list(freq.keys())
-            weights = list(freq.values())
-            ch = random.choices(chars, weights=weights)[0]
-        out.append(ch)
-    return ''.join(out)
+            context = random.choice(list(m.keys()))
+            if len(out) + len(context) > length:
+                break
+            out += context
+            continue
+        chars = list(freq.keys())
+        weights = list(freq.values())
+        ch = random.choices(chars, weights=weights)[0]
+        out += ch
+        context = out[-(n - 1) :]
+    return out[:length]
 
 
 def update_index(comment):
@@ -152,15 +236,22 @@ def log_interaction(user_text: str, ai_text: str) -> None:
     with open(HUMAN_LOG, "a", encoding="utf-8") as f:
         timestamp = datetime.utcnow().isoformat()
         f.write(f"{timestamp} USER:{user_text} AI:{ai_text}\n")
+    record_pattern(user_text)
 
 
 def evolve(entry: str) -> None:
     """Append a small evolution step to a Python file."""
     if not os.path.exists(EVOLUTION_FILE):
         with open(EVOLUTION_FILE, "w", encoding="utf-8") as f:
-            f.write("evolution_steps = []\n")
+            f.write(
+                "evolution_steps = {'chat': [], 'ping': [], 'resonance': [], 'error': []}\n"
+            )
+    category, payload = (entry.split(":", 1) + [""])[0:2]
+    if category not in {"chat", "ping", "resonance", "error"}:
+        category = "error"
+        payload = entry
     with open(EVOLUTION_FILE, "a", encoding="utf-8") as f:
-        f.write(f"evolution_steps.append({entry!r})\n")
+        f.write(f"evolution_steps['{category}'].append({payload!r})\n")
 
 
 def chat_response(user_text: str) -> str:
@@ -169,6 +260,7 @@ def chat_response(user_text: str) -> str:
     seed = user_text[-1] if user_text else None
     reply = generate(model, seed=seed)
     log_interaction(user_text, reply)
+    record_pattern(reply)
     evolve(f"chat:{user_text[:10]}->{reply[:10]}")
     return reply
 
@@ -189,6 +281,7 @@ def run():
     rotate_log(LOG_FILE, LOG_MAX_BYTES)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"{datetime.utcnow().isoformat()} {comment}\n")
+    record_pattern(comment)
     update_index(comment)
     evolve(f"ping:{comment[:10]}")
     try:
