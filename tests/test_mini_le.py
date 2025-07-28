@@ -101,3 +101,14 @@ def test_trigram_generation_closer_to_source(tmp_path, monkeypatch):
 
     assert mismatch(text, gen_tri) <= mismatch(text, gen_bi)
 
+
+def test_generate_fallback_without_nanogpt(monkeypatch):
+    model = {"n": 2, "model": {"a": {"b": 1}, "b": {"a": 1}}}
+
+    def fake_generate(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(mini_le.nanogpt_bridge, "generate", fake_generate)
+    result = mini_le.generate(model, length=3, seed="a")
+    assert result == "aba"
+
