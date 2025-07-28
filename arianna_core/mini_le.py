@@ -460,9 +460,10 @@ def get_data_files() -> list:
     files = [f for f in CORE_FILES if os.path.exists(f)]
     if os.path.isdir(DATA_DIR):
         for name in sorted(os.listdir(DATA_DIR)):
-            path = os.path.join(DATA_DIR, name)
-            if os.path.isfile(path):
-                files.append(path)
+            if name.endswith(".ru.md") or name.endswith(".md"):
+                path = os.path.join(DATA_DIR, name)
+                if os.path.isfile(path):
+                    files.append(path)
     return files
 
 # simple character-level Markov model
