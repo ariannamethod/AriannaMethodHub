@@ -279,8 +279,14 @@ footer p {
 #chat-input {
     background: black;
     color: var(--matrix-green);
-    border: 1px solid var(--matrix-dark-green);
+    border: 1px solid var(--matrix-blue);
     padding: 4px;
+    box-shadow: 0 0 5px var(--matrix-blue);
+}
+
+#chat-input:focus {
+    outline: none;
+    box-shadow: 0 0 10px var(--matrix-blue);
 }
 
 #chat-response {
