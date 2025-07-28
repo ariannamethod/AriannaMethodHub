@@ -28,3 +28,15 @@ def test_log_rotation(tmp_path, monkeypatch):
     rotated = list(tmp_path.glob("human.log.*"))
     assert len(rotated) == 1
     assert log.read_text(encoding="utf-8").endswith("AI:ok\n")
+
+
+def test_evolve_appends_entry(tmp_path, monkeypatch):
+    evo_file = tmp_path / "evolution_steps.py"
+    monkeypatch.setattr(mini_le, "EVOLUTION_FILE", str(evo_file))
+    mini_le.evolve("test")
+    assert evo_file.exists()
+    lines = evo_file.read_text(encoding="utf-8").splitlines()
+    assert lines == [
+        "evolution_steps = []",
+        "evolution_steps.append('test')",
+    ]
