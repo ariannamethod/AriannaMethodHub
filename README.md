@@ -117,6 +117,8 @@ Inside this repository lives a tiny neural companion that powers the dynamic com
 
 The logic resides in [`arianna_core/mini_le.py`](arianna_core/mini_le.py). When the server is contacted, the script loads both this `README.md` and `Arianna-Method-v2.9.md` to form its training corpus. Using those texts ensures the generated output reflects the language and rhythm of the Method itself. You can import it with `from arianna_core import mini_le`.
 
+Additional corpus files can be placed in the `datasets/` directory at the repository root. On each run the script records file sizes in `arianna_core/dataset_state.json` and automatically incorporates any new or changed texts.
+
 `mini_le` descends from the [LE‑AriannaMethod](https://github.com/ariannamethod/LE-AriannaMethod) framework, which blends techniques from [TinyLlama](https://github.com/jzhang38/TinyLlama) and [nanoGPT](https://github.com/karpathy/nanoGPT). These repositories showcase the lineage and inspirations behind this minimal implementation.
 
 During training, the script scans character by character and records how often each symbol follows another. These frequencies form a minimal Markov chain — a network of probabilities rather than a heavy neural net with layers and weights.
