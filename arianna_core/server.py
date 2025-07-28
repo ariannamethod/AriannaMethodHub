@@ -6,8 +6,11 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/chat'):
             from urllib.parse import urlparse, parse_qs
-            query = parse_qs(urlparse(self.path).query)
+            from html import escape
+
+            query = parse_qs(urlparse(self.path).query, keep_blank_values=True)
             msg = query.get('msg', [''])[0]
+            msg = escape(msg.replace("\r", "").replace("\n", " "))
             try:
                 reply = mini_le.chat_response(msg)
             except Exception as e:

@@ -58,3 +58,54 @@ def test_root_triggers_run(monkeypatch):
     assert called
     assert status == 200
     assert "<!DOCTYPE html>" in body
+
+
+def test_chat_sanitizes_input(monkeypatch, tmp_path):
+    log = tmp_path / "log.txt"
+    received = {}
+
+    def fake_chat(msg):
+        received["msg"] = msg
+        with open(log, "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+        return "reply"
+
+    srv = make_server(monkeypatch, chat_func=fake_chat)
+    thread = threading.Thread(target=srv.handle_request)
+    thread.start()
+    status, body = get(srv, "/chat?msg=bad%0A<script>")
+    thread.join()
+    srv.server_close()
+
+    assert status == 200
+    assert body == "reply"
+    # message passed to chat should be sanitized
+    assert "\n" not in received["msg"] and "\r" not in received["msg"]
+    assert "<" not in received["msg"]
+    content = log.read_text(encoding="utf-8").splitlines()
+    # log file should contain exactly one line with sanitized message
+    assert len(content) == 1
+    assert content[0] == received["msg"]
+
+
+def test_chat_handles_missing_msg(monkeypatch, tmp_path):
+    log = tmp_path / "log.txt"
+
+    def fake_chat(msg):
+        with open(log, "a", encoding="utf-8") as f:
+            f.write((msg or "<empty>") + "\n")
+        return "ok"
+
+    srv = make_server(monkeypatch, chat_func=fake_chat)
+    thread = threading.Thread(target=srv.handle_request)
+    thread.start()
+    status, body = get(srv, "/chat")
+    thread.join()
+    srv.server_close()
+
+    assert status == 200
+    assert body == "ok"
+    # log should have single sanitized line even with missing msg
+    content = log.read_text(encoding="utf-8").splitlines()
+    assert len(content) == 1
+    assert content[0] == "<empty>"
