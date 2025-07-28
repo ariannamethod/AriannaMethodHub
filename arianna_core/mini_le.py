@@ -3,6 +3,7 @@ import random
 import json
 from datetime import datetime
 
+from .evolution_safe import evolve_cycle
 CORE_FILES = ["README.md", "Arianna-Method-v2.9.md"]
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 STATE_FILE = os.path.join("arianna_core", "dataset_state.json")
@@ -190,6 +191,10 @@ def run():
         f.write(f"{datetime.utcnow().isoformat()} {comment}\n")
     update_index(comment)
     evolve(f"ping:{comment[:10]}")
+    try:
+        evolve_cycle()
+    except Exception as e:
+        print("evolve_cycle failed:", e)
 
 
 if __name__ == "__main__":
