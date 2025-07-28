@@ -107,6 +107,25 @@ def record_pattern(pattern: str) -> None:
     conn.close()
 
 
+def maintain_pattern_memory(limit: int = 1000, *, min_count: int = 2) -> None:
+    """Prune low-frequency patterns and cap total rows to ``limit``."""
+    conn = sqlite3.connect(MEMORY_DB)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS patterns (pattern TEXT PRIMARY KEY, count INTEGER)"
+    )
+    conn.execute("DELETE FROM patterns WHERE count < ?", (min_count,))
+    total = conn.execute("SELECT COUNT(*) FROM patterns").fetchone()[0]
+    if total > limit:
+        excess = total - limit
+        rows = conn.execute(
+            "SELECT pattern FROM patterns ORDER BY count ASC, pattern ASC LIMIT ?",
+            (excess,),
+        ).fetchall()
+        conn.executemany("DELETE FROM patterns WHERE pattern=?", rows)
+    conn.commit()
+    conn.close()
+
+
 def metabolize_input(text: str, n: int | None = None) -> float:
     """Return novelty ratio of ``text`` based on the current model."""
     model = load_model()
@@ -162,6 +181,7 @@ def reproduction_cycle() -> Dict:
         f.write(datetime.utcnow().isoformat())
     with open(MODEL_FILE, "w", encoding="utf-8") as f:
         json.dump(improved, f)
+    maintain_pattern_memory()
     return improved
 
 

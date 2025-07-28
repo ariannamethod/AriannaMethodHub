@@ -185,6 +185,21 @@ def test_resonance_report(tmp_path, monkeypatch):
     assert report["resonance_frequency"] == 0.5
 
 
+def test_maintain_pattern_memory(tmp_path, monkeypatch):
+    db = tmp_path / "mem.db"
+    monkeypatch.setattr(mini_le, "MEMORY_DB", str(db))
+    for i in range(5):
+        mini_le.record_pattern(f"p{i}")
+        if i < 3:
+            mini_le.record_pattern(f"p{i}")
+    mini_le.maintain_pattern_memory(limit=3)
+    conn = sqlite3.connect(db)
+    rows = conn.execute("SELECT pattern, count FROM patterns ORDER BY pattern").fetchall()
+    conn.close()
+    assert len(rows) <= 3
+    assert all(c >= 2 for _, c in rows)
+
+
 def test_dream_cycle(tmp_path, monkeypatch):
     model_file = tmp_path / "model.txt"
     dream_log = tmp_path / "dream.log"
