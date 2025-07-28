@@ -235,6 +235,14 @@ ruff check .
 pytest -vv
 ```
 
+If you prefer not to install the package, add the repository root to
+`PYTHONPATH` before running the tests:
+
+```sh
+export PYTHONPATH="$(pwd):$PYTHONPATH"
+pytest -vv
+```
+
 ### Safe Evolution Utility
 
 `evolution_safe.py` keeps experiments reversible. When invoked, it copies the
