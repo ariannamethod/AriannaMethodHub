@@ -35,13 +35,18 @@ CHAT_LOG: list[tuple[str, str]] = []
 
 
 class Handler(SimpleHTTPRequestHandler):
-    def _render_page(self):
-        """Return the chat HTML page."""
+    def _render_log(self) -> str:
+        """Return just the chat log HTML."""
         messages = []
         for user, bot in CHAT_LOG:
             messages.append(f"<div class='message'>&gt; {user}</div>")
             messages.append(f"<div class='message'>{bot}</div>")
         log_html = "\n".join(messages)
+        return f"<div id='chat-log'>{log_html}</div>"
+
+    def _render_page(self):
+        """Return the full chat HTML page."""
+        log_html = self._render_log()
         html = f"""
 <!DOCTYPE html>
 <html lang='ru'>
@@ -75,10 +80,26 @@ class Handler(SimpleHTTPRequestHandler):
     </style>
 </head>
 <body>
-    <div id='chat-log'>{log_html}</div>
-    <form action='/chat' method='get'>
+    {log_html}
+    <form id='chat-form' action='/chat' method='get'>
         <input id='chat-input' name='msg' type='text' autofocus autocomplete='off'>
     </form>
+    <script>
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('chat-input');
+        form.addEventListener('submit', async (e) => {{
+            e.preventDefault();
+            const msg = input.value.trim();
+            if (!msg) return;
+            const resp = await fetch('/chat?msg=' + encodeURIComponent(msg), {{
+                headers: {{ 'X-Requested-With': 'fetch' }}
+            }});
+            const html = await resp.text();
+            document.getElementById('chat-log').innerHTML = html;
+            input.value = '';
+            input.focus();
+        }});
+    </script>
 </body>
 </html>
         """
@@ -121,9 +142,14 @@ class Handler(SimpleHTTPRequestHandler):
                 if is_enabled("sixth_sense"):
                     background(sixth_feeling.predict_next)
             self.send_response(200)
-            self.send_header('Content-Type', 'text/html; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(self._render_page())
+            if self.headers.get('X-Requested-With') == 'fetch':
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(self._render_log().encode('utf-8'))
+            else:
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(self._render_page())
             return
         if self.path in ('/', '/index.html'):
             try:
