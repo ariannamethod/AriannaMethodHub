@@ -3,6 +3,7 @@ import json
 import sqlite3
 import random
 import time
+from datetime import datetime
 from arianna_core import mini_le  # noqa: E402
 
 
@@ -205,9 +206,11 @@ def test_check_dataset_updates_triggers_reproduction(tmp_path, monkeypatch):
     file1 = data_dir / "f.txt"
     file1.write_text("a", encoding="utf-8")
     state = tmp_path / "state.json"
+    repro = tmp_path / "repro.txt"
     monkeypatch.setattr(mini_le, "DATA_DIR", str(data_dir))
     monkeypatch.setattr(mini_le, "STATE_FILE", str(state))
     monkeypatch.setattr(mini_le, "CORE_FILES", [])
+    monkeypatch.setattr(mini_le, "REPRO_FILE", str(repro))
     monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: None)
     mini_le.check_dataset_updates()
     called = []
@@ -221,11 +224,13 @@ def test_check_log_updates_triggers_reproduction(tmp_path, monkeypatch):
     log = tmp_path / "log.txt"
     state = tmp_path / "log_state.json"
     change = tmp_path / "log_change.log"
+    repro = tmp_path / "repro.txt"
     monkeypatch.setattr(mini_le, "LOG_FILE", str(log))
     monkeypatch.setattr(mini_le, "HUMAN_LOG", str(log))
     monkeypatch.setattr(mini_le, "DREAM_LOG", str(log))
     monkeypatch.setattr(mini_le, "LOG_STATE_FILE", str(state))
     monkeypatch.setattr(mini_le, "LOG_CHANGE_LOG", str(change))
+    monkeypatch.setattr(mini_le, "REPRO_FILE", str(repro))
     log.write_text("x", encoding="utf-8")
     monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: None)
     mini_le.check_log_updates()
@@ -235,4 +240,26 @@ def test_check_log_updates_triggers_reproduction(tmp_path, monkeypatch):
     log.write_text("y", encoding="utf-8")
     mini_le.check_log_updates()
     assert called
+
+
+def test_reproduction_throttle(tmp_path, monkeypatch):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    f = data_dir / "f.txt"
+    f.write_text("a", encoding="utf-8")
+    state = tmp_path / "state.json"
+    repro = tmp_path / "repro.txt"
+    monkeypatch.setattr(mini_le, "DATA_DIR", str(data_dir))
+    monkeypatch.setattr(mini_le, "STATE_FILE", str(state))
+    monkeypatch.setattr(mini_le, "CORE_FILES", [])
+    monkeypatch.setattr(mini_le, "REPRO_FILE", str(repro))
+    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: None)
+    mini_le.check_dataset_updates()
+    repro.write_text(datetime.utcnow().isoformat(), encoding="utf-8")
+    monkeypatch.setattr(mini_le.settings, "reproduction_throttle", 60)
+    called = []
+    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: called.append(True))
+    f.write_text("b", encoding="utf-8")
+    mini_le.check_dataset_updates()
+    assert not called
 

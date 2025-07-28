@@ -35,6 +35,22 @@ LOG_STATE_FILE = os.path.join("arianna_core", "log_state.json")
 LOG_CHANGE_LOG = os.path.join("arianna_core", "log_changes.log")
 
 
+def can_reproduce() -> bool:
+    """Return ``True`` if reproduction can occur based on throttle settings."""
+    throttle = getattr(settings, "reproduction_throttle", 0)
+    if throttle <= 0:
+        return True
+    if not os.path.exists(REPRO_FILE):
+        return True
+    with open(REPRO_FILE, "r", encoding="utf-8") as f:
+        ts = f.read().strip()
+    try:
+        last = datetime.fromisoformat(ts)
+    except ValueError:
+        return True
+    return (datetime.utcnow() - last).total_seconds() >= throttle
+
+
 def _allowed_messages() -> int:
     """Return the number of allowed chat messages based on log size."""
     size = os.path.getsize(HUMAN_LOG) if os.path.exists(HUMAN_LOG) else 0
@@ -291,7 +307,8 @@ def check_utility_updates() -> None:
             timestamp = datetime.utcnow().isoformat()
             entries = ",".join(changed + removed)
             log.write(f"{timestamp} {entries}\n")
-        reproduction_cycle()
+        if can_reproduce():
+            reproduction_cycle()
 
 
 def check_dataset_updates() -> None:
@@ -307,7 +324,8 @@ def check_dataset_updates() -> None:
     if current != previous:
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(current, f)
-        reproduction_cycle()
+        if can_reproduce():
+            reproduction_cycle()
 
 
 def _logs_snapshot() -> dict:
@@ -336,7 +354,8 @@ def check_log_updates() -> None:
         with open(LOG_CHANGE_LOG, "a", encoding="utf-8") as log:
             timestamp = datetime.utcnow().isoformat()
             log.write(f"{timestamp} {','.join(changed)}\n")
-        reproduction_cycle()
+        if can_reproduce():
+            reproduction_cycle()
 
 
 def get_data_files() -> list:
@@ -601,7 +620,7 @@ def run():
     evolve(f"ping:{comment[:10]}")
     try:
         evolve_cycle()
-        if retrain:
+        if retrain and can_reproduce():
             reproduction_cycle()
         dream_cycle()
     except Exception as e:
