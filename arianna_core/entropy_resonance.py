@@ -42,6 +42,7 @@ def entropy_resonance_mutate(model: dict) -> tuple[dict, float, bool]:
     if resonance_check(ent):
         mutated = entropy_mutation(model, sample)
         changed = mutated != model
+    mini_le.rotate_log(LOG_FILE, mini_le.LOG_MAX_BYTES)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(
             f"{datetime.utcnow().isoformat()} entropy={ent:.2f} changed={changed}\n"
