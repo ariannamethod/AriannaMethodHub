@@ -1,5 +1,5 @@
-from . import mini_le, server, local_rag, nanogpt_bridge
+from . import mini_le, server, local_rag, nanogpt_bridge, skin
 from .config import settings
 
-__all__ = ["mini_le", "server", "local_rag", "nanogpt_bridge", "settings"]
+__all__ = ["mini_le", "server", "local_rag", "nanogpt_bridge", "skin", "settings"]
 

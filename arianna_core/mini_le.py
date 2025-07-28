@@ -583,6 +583,11 @@ def run():
         dream_cycle()
     except Exception as e:
         print("evolve_cycle failed:", e)
+    try:
+        from . import skin
+        skin.evolve_skin()
+    except Exception as e:
+        print("skin evolve failed:", e)
 
 
 if __name__ == "__main__":
