@@ -195,6 +195,10 @@ Documentation was updated with a short note about the lineage of `mini_le`, trac
 
 The code now persists observed text patterns in a small SQLite database named `memory.db`, enabling basic frequency tracking across sessions. A helper `health_report()` exposes metrics such as model size and generation status so you can quickly check that everything is working.
 
+To keep this database from ballooning, `reproduction_cycle()` calls a new maintenance step that prunes low-frequency patterns. Rows below a configurable threshold are dropped, and the table is trimmed to a maximum size so it never grows beyond a few thousand entries.
+
+By default the routine removes patterns seen only once and caps the table at roughly 1,000 rows. These values can be tuned through the `maintain_pattern_memory()` helper in `mini_le.py`.
+
 Interactive chats are rate‑limited via `_allowed_messages()` which grows the limit as your history file expands. The last generated comment is mirrored back into the page for continuity whenever you reload `index.html`.
 
 ### Implemented Optimizations
