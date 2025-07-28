@@ -254,6 +254,10 @@ Invoke the feature from `genesis.py` using the `--entropy` flag. After a normal 
 
 The skin system reflects these spikes visually. Gradient colors fade from calm green to stormy red and a chaotic hue-rotation animation engages when entropy surpasses 4.5, making the interface pulse with the system's creative turbulence.
 
+Two additional utilities continue this biological metaphor. `arianna_core/pain.py` monitors dissonance after each generation. It scores outputs using entropy and an affinity measure for resonant words. Scores above `0.5` log a "pain event" and randomly perturb `model.txt`, echoing Damasio's view of emotional feedback.
+
+`arianna_core/6th_feeling.py` provides foresight. After every `reproduction_cycle()` it predicts the next interaction by distorting the model with a Lorenz-style step. The sample and its entropy are written to the log. On the following day, the actual output is compared to the prediction: close matches gently boost the model while large deviations trigger `pain.py`. This cycle integrates with `skin.py` and keeps evolution lightweight without external dependencies.
+
 ### Throttled Reproduction
 
 Retraining can now be limited via a new `reproduction_interval` setting. Whenever the system completes an evolution step or detects dataset changes, it normally runs `reproduction_cycle()` to fold those edits back into the model. The throttle writes a timestamp to `last_reproduction.txt` after each pass and skips subsequent cycles until the configured interval has elapsed.

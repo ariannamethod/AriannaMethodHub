@@ -6,7 +6,8 @@ import gzip
 import shutil
 import hashlib
 
-from . import entropy_resonance
+from . import entropy_resonance, pain
+import importlib
 from datetime import datetime
 from typing import Dict
 
@@ -14,6 +15,8 @@ from . import nanogpt_bridge
 
 from .evolution_safe import evolve_cycle
 from .config import settings
+
+sixth_feeling = importlib.import_module("arianna_core.6th_feeling")
 CORE_FILES = ["README.md", "Arianna-Method-v2.9.md", "index.html", "le_persona_prompt.md"]
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 STATE_FILE = os.path.join("arianna_core", "dataset_state.json")
@@ -200,6 +203,7 @@ def reproduction_cycle() -> Dict:
     text = load_data()
     model = train(text)
     improved = adaptive_mutation(model)
+    sixth_feeling.predict_next(improved)
     with open(REPRO_FILE, "w", encoding="utf-8") as f:
         f.write(datetime.utcnow().isoformat())
     with open(MODEL_FILE, "w", encoding="utf-8") as f:
@@ -652,6 +656,8 @@ def chat_response(user_text: str, *, use_nanogpt: bool | None = None) -> str:
         seed = user_text[-1] if user_text else None
         reply = generate(model, seed=seed)
     reply = adjust_response_style(reply)
+    pain.trigger_pain(reply)
+    sixth_feeling.check_prediction(reply)
     log_interaction(user_text, reply)
     record_pattern(reply)
     evolve(f"chat:{user_text[:10]}->{reply[:10]}")
@@ -676,6 +682,8 @@ def run():
         if not model:
             model = train(text)
     comment = generate(model)
+    pain.trigger_pain(comment)
+    sixth_feeling.check_prediction(comment)
     global RECENT_NOVELTY
     RECENT_NOVELTY = metabolize_input(comment)
     previous = []
