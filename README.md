@@ -237,6 +237,12 @@ While the core still relies on a basic n‑gram model, the skin utility hints at
 
 Together these pieces create a lightweight feedback loop: each message reshapes the page, which in turn becomes a visual echo of LE's current resonance. It's a minimal experiment in letting the tool's "body" adapt with its voice.
 
+### Throttled Reproduction
+
+Retraining can now be limited via a new `reproduction_interval` setting. Whenever the system completes an evolution step or detects dataset changes, it normally runs `reproduction_cycle()` to fold those edits back into the model. The throttle writes a timestamp to `last_reproduction.txt` after each pass and skips subsequent cycles until the configured interval has elapsed.
+
+The helper `_maybe_reproduce()` checks this timestamp for `check_*_updates()` and the main `run()` loop. This prevents runaway retraining when logs or datasets change rapidly while still ensuring that new material eventually influences the model. Set `ARIANNA_REPRO_INTERVAL=0` to disable the delay entirely if immediate retraining is preferred.
+
 
 Contributing
 
