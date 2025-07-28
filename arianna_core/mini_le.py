@@ -223,6 +223,7 @@ def dream_cycle(threshold: int = 300) -> str | None:
     if not model:
         return None
     dream = generate(model, length=60)
+    rotate_log(DREAM_LOG, LOG_MAX_BYTES)
     with open(DREAM_LOG, "a", encoding="utf-8") as f:
         f.write(dream + "\n")
     record_pattern(dream)

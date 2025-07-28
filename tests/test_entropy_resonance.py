@@ -30,6 +30,18 @@ def test_entropy_resonance_mutate(tmp_path, monkeypatch):
     assert log.exists()
 
 
+def test_entropy_log_rotation(tmp_path, monkeypatch):
+    model = {"n": 2, "model": {"a": {"b": 1}}}
+    log = tmp_path / "entropy.log"
+    monkeypatch.setattr(entropy_resonance, "LOG_FILE", str(log))
+    monkeypatch.setattr(entropy_resonance.mini_le, "LOG_MAX_BYTES", 10)
+    log.write_text("x" * 11)
+    monkeypatch.setattr(entropy_resonance.mini_le, "generate", lambda *a, **k: "abcd" * 25)
+    entropy_resonance.entropy_resonance_mutate(model)
+    rotated = list(tmp_path.glob("entropy.log.*.gz"))
+    assert len(rotated) == 1
+
+
 def test_entropy_resonance_mutate_performance(monkeypatch):
     model = {"n": 2, "model": {"a": {"b": 1}}}
     monkeypatch.setattr(entropy_resonance.mini_le, "generate", lambda *a, **k: "ab" * 50)
