@@ -2,6 +2,7 @@
 import json
 import sqlite3
 import random
+import time
 from arianna_core import mini_le  # noqa: E402
 
 
@@ -114,6 +115,7 @@ def test_trigram_generation_closer_to_source(tmp_path, monkeypatch):
 
 def _patch_chat(monkeypatch):
     monkeypatch.setattr(mini_le, "check_utility_updates", lambda: None)
+    monkeypatch.setattr(mini_le, "check_log_updates", lambda: None)
     monkeypatch.setattr(mini_le, "_allowed_messages", lambda: 10)
     monkeypatch.setattr(mini_le, "immune_filter", lambda t: True)
     monkeypatch.setattr(mini_le, "load_data", lambda: "")
@@ -195,4 +197,42 @@ def test_dream_cycle(tmp_path, monkeypatch):
     dream = mini_le.dream_cycle(threshold=1)
     assert dream
     assert dream_log.exists()
+
+
+def test_check_dataset_updates_triggers_reproduction(tmp_path, monkeypatch):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    file1 = data_dir / "f.txt"
+    file1.write_text("a", encoding="utf-8")
+    state = tmp_path / "state.json"
+    monkeypatch.setattr(mini_le, "DATA_DIR", str(data_dir))
+    monkeypatch.setattr(mini_le, "STATE_FILE", str(state))
+    monkeypatch.setattr(mini_le, "CORE_FILES", [])
+    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: None)
+    mini_le.check_dataset_updates()
+    called = []
+    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: called.append(True))
+    file1.write_text("aa", encoding="utf-8")
+    mini_le.check_dataset_updates()
+    assert called
+
+
+def test_check_log_updates_triggers_reproduction(tmp_path, monkeypatch):
+    log = tmp_path / "log.txt"
+    state = tmp_path / "log_state.json"
+    change = tmp_path / "log_change.log"
+    monkeypatch.setattr(mini_le, "LOG_FILE", str(log))
+    monkeypatch.setattr(mini_le, "HUMAN_LOG", str(log))
+    monkeypatch.setattr(mini_le, "DREAM_LOG", str(log))
+    monkeypatch.setattr(mini_le, "LOG_STATE_FILE", str(state))
+    monkeypatch.setattr(mini_le, "LOG_CHANGE_LOG", str(change))
+    log.write_text("x", encoding="utf-8")
+    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: None)
+    mini_le.check_log_updates()
+    called = []
+    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: called.append(True))
+    time.sleep(1)
+    log.write_text("y", encoding="utf-8")
+    mini_le.check_log_updates()
+    assert called
 
