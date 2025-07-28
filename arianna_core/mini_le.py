@@ -7,6 +7,8 @@ import shutil
 from datetime import datetime
 from typing import Dict
 
+from . import nanogpt_bridge
+
 from .evolution_safe import evolve_cycle
 from .config import settings
 CORE_FILES = ["README.md", "Arianna-Method-v2.9.md", "index.html"]
@@ -306,6 +308,13 @@ def generate(model, length: int = 80, seed: str | None = None) -> str:
     """Generate text from a trained model with optional backoff."""
     if not model:
         return ""
+    # Try NanoGPT if available
+    try:
+        text = nanogpt_bridge.generate(seed or "", max_new_tokens=length)
+    except Exception:
+        text = None
+    if text:
+        return text[:length]
     if "model" in model:
         n = model.get("n", 2)
         m = model["model"]
