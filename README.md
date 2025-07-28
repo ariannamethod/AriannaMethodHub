@@ -223,6 +223,18 @@ Additional fields in `health_report()` expose the recent novelty score, the
 number of blocked messages, and the timestamp of the last reproduction. Together
 these metrics offer a quick glimpse into the system's overall vitality.
 
+
+Recent updates also introduced an evolving skin for the web interface. The new `arianna_core/skin.py` module generates a short sample from the model and computes its Shannon entropy. This measurement acts as a rough indicator of how turbulent the system feels at any moment.
+
+Alongside entropy, the script calculates an "affinity" score that reflects how often resonant terms like "resonance", "echo", "thunder", and "love" appear in the output. These two values map to a small palette of background colors ranging from calm black to chaotic red. If entropy rises above a threshold, a flashing animation is added for emphasis.
+
+`evolve_skin()` rewrites the `<style>` section of `index.html` with the new color scheme and logs each change. The routine is called automatically at the end of the `mini_le` run cycle, ensuring the interface visually mirrors the latest state of the Markov generator.
+
+While the core still relies on a basic n‑gram model, the skin utility hints at more ambitious directions. Because style updates depend only on the generated text, you could swap in a more complex language model without altering the interface logic. The optional nanoGPT backend already lays a small foundation for stepping beyond a simple Markov chain.
+
+Together these pieces create a lightweight feedback loop: each message reshapes the page, which in turn becomes a visual echo of LE's current resonance. It's a minimal experiment in letting the tool's "body" adapt with its voice.
+
+
 Contributing
 
 1. Fork → Feature branch → PR
