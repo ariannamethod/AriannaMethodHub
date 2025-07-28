@@ -1,10 +1,14 @@
 import math
 import random
 import importlib
+import logging
+
+from .config import is_enabled
 
 _mini_le = None
 MODEL_FILE = None
 LOG_FILE = None
+event_count = 0
 
 def _load_refs():
     global _mini_le, MODEL_FILE, LOG_FILE
@@ -28,6 +32,9 @@ def calculate_entropy(output: str) -> float:
 
 def trigger_pain(output: str, max_ent: float = 8.0) -> float:
     """Calculate pain score and mutate the model when it is high."""
+    if not is_enabled("pain"):
+        logging.info("[pain] feature disabled, skipping")
+        return 0.0
     _load_refs()
     from json import dump
 
@@ -45,7 +52,21 @@ def trigger_pain(output: str, max_ent: float = 8.0) -> float:
                 dump(model, f)
         with open(_mini_le.LOG_FILE, 'a', encoding='utf-8') as f:
             f.write(f"Pain event: score {score:.2f}, mutated.\n")
+        global event_count
+        event_count += 1
     return score
+
+
+def check_once() -> None:
+    """Run a single pain check if the feature is enabled."""
+    if not is_enabled("pain"):
+        logging.info("[pain] feature disabled, skipping")
+        return
+    _load_refs()
+    model = _mini_le.load_model()
+    if model:
+        out = _mini_le.generate(model, length=20)
+        trigger_pain(out)
 
 if __name__ == '__main__':
     test_output = 'resonance echo thunder love' * 5

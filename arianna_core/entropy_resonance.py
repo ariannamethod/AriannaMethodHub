@@ -1,8 +1,10 @@
 import json
 import math
 from datetime import datetime
+import logging
 
 from . import mini_le
+from .config import is_enabled
 
 LOG_FILE = "arianna_core/entropy.log"
 
@@ -48,3 +50,16 @@ def entropy_resonance_mutate(model: dict) -> tuple[dict, float, bool]:
             f"{datetime.utcnow().isoformat()} entropy={ent:.2f} changed={changed}\n"
         )
     return mutated, ent, changed
+
+
+def run_once() -> None:
+    """Perform an entropy resonance cycle once if the feature is enabled."""
+    if not is_enabled("entropy"):
+        logging.info("[entropy] feature disabled, skipping")
+        return
+    model = mini_le.load_model() or {}
+    mutated, ent, changed = entropy_resonance_mutate(model)
+    mini_le.last_entropy = ent
+    if changed:
+        with open(mini_le.MODEL_FILE, "w", encoding="utf-8") as f:
+            json.dump(mutated, f)

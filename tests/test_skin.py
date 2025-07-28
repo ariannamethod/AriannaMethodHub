@@ -1,4 +1,4 @@
-from arianna_core import skin
+from arianna_core import skin, config
 
 
 def test_calculate_entropy_zero():
@@ -15,6 +15,7 @@ def test_evolve_skin_modifies_html(tmp_path, monkeypatch):
     html = tmp_path / "index.html"
     html.write_text("<html><head></head><body></body></html>", encoding="utf-8")
     log = tmp_path / "log.txt"
+    config.FEATURES["skin"] = True
     monkeypatch.setattr(skin, "LOG_FILE", str(log))
     monkeypatch.setattr(skin, "load_model", lambda: {})
     monkeypatch.setattr(skin, "generate", lambda *a, **k: "resonance")

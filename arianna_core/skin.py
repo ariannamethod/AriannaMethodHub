@@ -1,6 +1,8 @@
 import math
 from datetime import datetime
+import logging
 from .mini_le import load_model, generate
+from .config import is_enabled
 
 INDEX_PATH = 'index.html'
 LOG_FILE = 'arianna_core/log.txt'
@@ -26,6 +28,9 @@ def affinity(text: str) -> float:
 
 def evolve_skin(index_path: str = INDEX_PATH) -> str:
     """Adjust page background color based on generated output."""
+    if not is_enabled("skin"):
+        logging.info("[skin] feature disabled, skipping")
+        return ""
     model = load_model() or {}
     output = generate(model, length=100)
     ent = calculate_entropy(output)
