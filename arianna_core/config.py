@@ -8,6 +8,7 @@ class Settings:
     """Project configuration settings."""
 
     n_gram_size: int = 2
+    use_nanogpt: bool = False
 
     def __post_init__(self) -> None:
         # load from pyproject if available
@@ -20,9 +21,18 @@ class Settings:
                 .get("arianna", {})
                 .get("n_gram_size", self.n_gram_size)
             )
+            use_ngpt = (
+                data.get("tool", {})
+                .get("arianna", {})
+                .get("use_nanogpt", self.use_nanogpt)
+            )
             self.n_gram_size = int(os.getenv("ARIANNA_NGRAM_SIZE", n))
+            flag = os.getenv("ARIANNA_USE_NANOGPT", str(use_ngpt))
+            self.use_nanogpt = flag.lower() in {"1", "true", "yes"}
         else:
             self.n_gram_size = int(os.getenv("ARIANNA_NGRAM_SIZE", self.n_gram_size))
+            flag = os.getenv("ARIANNA_USE_NANOGPT", str(self.use_nanogpt))
+            self.use_nanogpt = flag.lower() in {"1", "true", "yes"}
 
 
 settings = Settings()

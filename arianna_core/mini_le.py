@@ -328,13 +328,6 @@ def generate(
     rng = rng or random
     if not model:
         return ""
-    # Try NanoGPT if available
-    try:
-        text = nanogpt_bridge.generate(seed or "", max_new_tokens=length)
-    except Exception:
-        text = None
-    if text:
-        return text[:length]
     if "model" in model:
         n = model.get("n", 2)
         m = model["model"]
@@ -419,8 +412,11 @@ def evolve(entry: str) -> None:
         f.write(f"evolution_steps['{category}'].append({payload!r})\n")
 
 
-def chat_response(user_text: str) -> str:
+def chat_response(user_text: str, *, use_nanogpt: bool | None = None) -> str:
     global CHAT_SESSION_COUNT, RECENT_NOVELTY
+    if use_nanogpt is None:
+        use_nanogpt = settings.use_nanogpt
+
     check_utility_updates()
     allowed = _allowed_messages()
     if CHAT_SESSION_COUNT >= allowed:
@@ -429,10 +425,17 @@ def chat_response(user_text: str) -> str:
         return "CONTENT BLOCKED"
     CHAT_SESSION_COUNT += 1
     RECENT_NOVELTY = metabolize_input(user_text)
-    text = load_data()
-    model = train(text)
-    seed = user_text[-1] if user_text else None
-    reply = generate(model, seed=seed)
+    reply = None
+    if use_nanogpt:
+        try:
+            reply = nanogpt_bridge.generate(user_text)
+        except Exception:
+            reply = None
+    if not reply:
+        text = load_data()
+        model = train(text)
+        seed = user_text[-1] if user_text else None
+        reply = generate(model, seed=seed)
     log_interaction(user_text, reply)
     record_pattern(reply)
     evolve(f"chat:{user_text[:10]}->{reply[:10]}")
@@ -469,4 +472,15 @@ def run():
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="mini_le utility")
+    parser.add_argument(
+        "--nanogpt",
+        action="store_true",
+        help="use nanoGPT backend for generation",
+    )
+    args = parser.parse_args()
+    if args.nanogpt:
+        settings.use_nanogpt = True
     run()
