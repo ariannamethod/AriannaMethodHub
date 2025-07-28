@@ -7,6 +7,7 @@ import shutil
 from datetime import datetime
 
 from .evolution_safe import evolve_cycle
+from .config import settings
 CORE_FILES = ["README.md", "Arianna-Method-v2.9.md"]
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 STATE_FILE = os.path.join("arianna_core", "dataset_state.json")
@@ -16,7 +17,7 @@ MODEL_FILE = os.path.join("arianna_core", "model.txt")
 EVOLUTION_FILE = os.path.join("arianna_core", "evolution_steps.py")
 MEMORY_DB = os.path.join("arianna_core", "memory.db")
 LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
-NGRAM_SIZE = 2
+NGRAM_SIZE = settings.n_gram_size
 CHAT_SESSION_COUNT = 0
 
 
@@ -141,8 +142,10 @@ def load_data():
     return text
 
 
-def train(text: str, n: int = NGRAM_SIZE):
+def train(text: str, n: int | None = None):
     """Train an ``n``-gram model from ``text``."""
+    if n is None:
+        n = NGRAM_SIZE
     if n < 2:
         n = 2
     model = {}
@@ -151,6 +154,9 @@ def train(text: str, n: int = NGRAM_SIZE):
         nxt = text[i + n - 1]
         bucket = model.setdefault(ctx, {})
         bucket[nxt] = bucket.get(nxt, 0) + 1
+    # simple size optimization for large n-grams
+    if n > 3 and len(model) > 50000:
+        model = {c: f for c, f in model.items() if max(f.values()) > 1}
     with open(MODEL_FILE, "w", encoding="utf-8") as f:
         json.dump({"n": n, "model": model}, f)
     return {"n": n, "model": model}
@@ -191,7 +197,7 @@ def load_model():
 
 
 def generate(model, length: int = 80, seed: str | None = None) -> str:
-    """Generate text from a trained model."""
+    """Generate text from a trained model with optional backoff."""
     if not model:
         return ""
     if "model" in model:
@@ -200,16 +206,27 @@ def generate(model, length: int = 80, seed: str | None = None) -> str:
     else:
         n = 2
         m = model
-    context = None
-    if seed:
-        context = seed[-(n - 1) :]
+    context = seed[-(n - 1) :] if seed else None
     if not context or context not in m:
-        context = random.choice(list(m.keys()))
+        if seed and n > 2:
+            fallback = seed[-1:]
+            if fallback in m:
+                context = fallback
+                n = 2
+        if not context or context not in m:
+            context = random.choice(list(m.keys()))
+            n = len(context) + 1
     out = context
     for _ in range(length - len(context)):
         freq = m.get(context)
         if not freq:
+            if n > 2:
+                context = context[-1:]
+                n = 2
+                freq = m.get(context)
+        if not freq:
             context = random.choice(list(m.keys()))
+            n = len(context) + 1
             if len(out) + len(context) > length:
                 break
             out += context

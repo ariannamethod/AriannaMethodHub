@@ -82,3 +82,22 @@ def test_chat_limit_grows_with_logs(tmp_path, monkeypatch):
     log.write_text("line\n" * 20, encoding="utf-8")
     mini_le.CHAT_SESSION_COUNT = 0
     assert mini_le.chat_response("hi") != "MESSAGE LIMIT REACHED"
+
+
+def mismatch(a: str, b: str) -> int:
+    return sum(ch1 != ch2 for ch1, ch2 in zip(a, b))
+
+
+def test_trigram_generation_closer_to_source(tmp_path, monkeypatch):
+    text = "abcabcabc"
+    model_file = tmp_path / "model.txt"
+    monkeypatch.setattr(mini_le, "MODEL_FILE", str(model_file))
+
+    bi = mini_le.train(text, n=2)
+    tri = mini_le.train(text, n=3)
+
+    gen_bi = mini_le.generate(bi, length=len(text), seed="ab")
+    gen_tri = mini_le.generate(tri, length=len(text), seed="ab")
+
+    assert mismatch(text, gen_tri) <= mismatch(text, gen_bi)
+
