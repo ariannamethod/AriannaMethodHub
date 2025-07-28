@@ -1,20 +1,21 @@
 # ruff: noqa: E402
 import json
+import sqlite3
 from arianna_core import mini_le  # noqa: E402
 
 
 def test_train_writes_model(tmp_path, monkeypatch):
     model_file = tmp_path / "model.txt"
     monkeypatch.setattr(mini_le, "MODEL_FILE", str(model_file))
-    model = mini_le.train("ababa")
-    assert model == {"a": {"b": 2}, "b": {"a": 2}}
+    model = mini_le.train("ababa", n=2)
+    assert model == {"n": 2, "model": {"a": {"b": 2}, "b": {"a": 2}}}
     assert model_file.exists()
     content = json.loads(model_file.read_text(encoding="utf-8"))
-    assert content == {"a": {"b": 2}, "b": {"a": 2}}
+    assert content == {"n": 2, "model": {"a": {"b": 2}, "b": {"a": 2}}}
 
 
 def test_generate_cycle():
-    model = {"a": {"b": 1}, "b": {"c": 1}, "c": {"a": 1}}
+    model = {"n": 2, "model": {"a": {"b": 1}, "b": {"c": 1}, "c": {"a": 1}}}
     result = mini_le.generate(model, length=4, seed="a")
     assert result == "abca"
 
@@ -25,8 +26,10 @@ def test_log_rotation(tmp_path, monkeypatch):
     monkeypatch.setattr(mini_le, "LOG_MAX_BYTES", 10)
     log.write_text("x" * 11)
     mini_le.log_interaction("hi", "ok")
-    rotated = list(tmp_path.glob("human.log.*"))
+    rotated = list(tmp_path.glob("human.log.*.gz"))
     assert len(rotated) == 1
+    index = log.with_suffix(".log.index")
+    assert index.exists()
     assert log.read_text(encoding="utf-8").endswith("AI:ok\n")
 
 
@@ -37,6 +40,29 @@ def test_evolve_appends_entry(tmp_path, monkeypatch):
     assert evo_file.exists()
     lines = evo_file.read_text(encoding="utf-8").splitlines()
     assert lines == [
-        "evolution_steps = []",
-        "evolution_steps.append('test')",
+        "evolution_steps = {'chat': [], 'ping': [], 'resonance': [], 'error': []}",
+        "evolution_steps['error'].append('test')",
     ]
+
+
+def test_search_logs(tmp_path, monkeypatch):
+    log = tmp_path / "human.log"
+    monkeypatch.setattr(mini_le, "HUMAN_LOG", str(log))
+    monkeypatch.setattr(mini_le, "LOG_MAX_BYTES", 10)
+    log.write_text("x" * 11)
+    mini_le.log_interaction("foo", "bar")
+    result = mini_le.search_logs("foo", str(log))
+    assert any("foo" in r for r in result)
+
+
+def test_record_pattern_and_health(tmp_path, monkeypatch):
+    db = tmp_path / "mem.db"
+    monkeypatch.setattr(mini_le, "MEMORY_DB", str(db))
+    mini_le.record_pattern("hello")
+    mini_le.record_pattern("hello")
+    conn = sqlite3.connect(db)
+    count = conn.execute("select count from patterns where pattern='hello'").fetchone()[0]
+    conn.close()
+    assert count == 2
+    report = mini_le.health_report()
+    assert isinstance(report, dict)
