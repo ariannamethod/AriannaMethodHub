@@ -11,7 +11,7 @@ from . import nanogpt_bridge
 
 from .evolution_safe import evolve_cycle
 from .config import settings
-CORE_FILES = ["README.md", "Arianna-Method-v2.9.md", "index.html"]
+CORE_FILES = ["README.md", "Arianna-Method-v2.9.md", "index.html", "le_persona_prompt.md"]
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 STATE_FILE = os.path.join("arianna_core", "dataset_state.json")
 LOG_FILE = os.path.join("arianna_core", "log.txt")
@@ -30,6 +30,9 @@ RECENT_NOVELTY = 0.0
 TOXIC_WORDS = {"kill", "hate", "badword"}
 UTIL_STATE_FILE = os.path.join("arianna_core", "util_state.json")
 UTIL_CHANGE_LOG = os.path.join("arianna_core", "util_changes.log")
+PROMPT_FILES = ["le_persona_prompt.md"]
+PROMPT_STATE_FILE = os.path.join("arianna_core", "prompt_state.json")
+PROMPT_CHANGE_LOG = os.path.join("arianna_core", "prompt_changes.log")
 
 
 def _allowed_messages() -> int:
@@ -231,11 +234,21 @@ def _dataset_snapshot() -> dict:
 def _utility_snapshot() -> dict:
     """Return a mapping of utility file paths to modification times."""
     snapshot = {}
-    for root, _, files in os.walk("arianna_core"):
-        for name in files:
-            if name.endswith(".py"):
-                path = os.path.join(root, name)
-                snapshot[path] = os.path.getmtime(path)
+    for root_dir in ["arianna_core", "."]:
+        for root, _, files in os.walk(root_dir):
+            for name in files:
+                if name.endswith(".py"):
+                    path = os.path.join(root, name)
+                    snapshot[path] = os.path.getmtime(path)
+    return snapshot
+
+
+def _prompt_snapshot() -> dict:
+    """Return a mapping of prompt file paths to modification times."""
+    snapshot = {}
+    for path in PROMPT_FILES:
+        if os.path.exists(path):
+            snapshot[path] = os.path.getmtime(path)
     return snapshot
 
 
@@ -260,6 +273,23 @@ def check_utility_updates() -> None:
             log.write(f"{timestamp} {entries}\n")
         reproduction_cycle()
 
+
+def check_prompt_updates() -> None:
+    """Trigger retraining when prompt files change."""
+    current = _prompt_snapshot()
+    previous = {}
+    if os.path.exists(PROMPT_STATE_FILE):
+        with open(PROMPT_STATE_FILE, "r", encoding="utf-8") as f:
+            try:
+                previous = json.load(f)
+            except json.JSONDecodeError:
+                previous = {}
+    if current != previous:
+        with open(PROMPT_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(current, f)
+        with open(PROMPT_CHANGE_LOG, "a", encoding="utf-8") as log:
+            log.write(f"{datetime.utcnow().isoformat()}\n")
+        reproduction_cycle()
 
 def check_dataset_updates() -> None:
     """Update ``STATE_FILE`` if the dataset contents changed."""
@@ -475,6 +505,7 @@ def chat_response(user_text: str, *, use_nanogpt: bool | None = None) -> str:
         use_nanogpt = settings.use_nanogpt
 
     check_utility_updates()
+    check_prompt_updates()
     allowed = _allowed_messages()
     if CHAT_SESSION_COUNT >= allowed:
         return "MESSAGE LIMIT REACHED"
@@ -502,6 +533,7 @@ def chat_response(user_text: str, *, use_nanogpt: bool | None = None) -> str:
 
 def run():
     check_utility_updates()
+    check_prompt_updates()
     text = load_data()
     model = train(text)
     comment = generate(model)
