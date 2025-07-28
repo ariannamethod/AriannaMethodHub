@@ -1,6 +1,7 @@
 # ruff: noqa: E402
 import json
 import sqlite3
+import random
 from arianna_core import mini_le  # noqa: E402
 
 
@@ -18,6 +19,15 @@ def test_generate_cycle():
     model = {"n": 2, "model": {"a": {"b": 1}, "b": {"c": 1}, "c": {"a": 1}}}
     result = mini_le.generate(model, length=4, seed="a")
     assert result == "abca"
+
+
+def test_generate_deterministic_with_rng():
+    model = {"n": 2, "model": {"a": {"b": 1}, "b": {"c": 1}, "c": {"a": 1}}}
+    rng1 = random.Random(42)
+    rng2 = random.Random(42)
+    out1 = mini_le.generate(model, length=6, seed="a", rng=rng1)
+    out2 = mini_le.generate(model, length=6, seed="a", rng=rng2)
+    assert out1 == out2
 
 
 def test_log_rotation(tmp_path, monkeypatch):
@@ -111,4 +121,11 @@ def test_generate_fallback_without_nanogpt(monkeypatch):
     monkeypatch.setattr(mini_le.nanogpt_bridge, "generate", fake_generate)
     result = mini_le.generate(model, length=3, seed="a")
     assert result == "aba"
+
+
+def test_backoff_threshold(tmp_path):
+    model = {"n": 2, "model": {"a": {"b": 1}}}
+    rng = random.Random(1)
+    out = mini_le.generate(model, length=4, seed="a", rng=rng, backoff_threshold=2)
+    assert out == "aba"
 

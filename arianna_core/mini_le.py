@@ -304,8 +304,28 @@ def load_model():
         return {"n": 2, "model": model}
 
 
-def generate(model, length: int = 80, seed: str | None = None) -> str:
-    """Generate text from a trained model with optional backoff."""
+def generate(
+    model, length: int = 80, seed: str | None = None,
+    *, rng: random.Random | None = None, backoff_threshold: int = 1
+) -> str:
+    """Generate text from a trained model with optional backoff.
+
+    Parameters
+    ----------
+    model : dict
+        Trained n-gram model.
+    length : int, optional
+        Number of characters to generate. Default is ``80``.
+    seed : str | None, optional
+        Optional seed string used to initialize the context.
+    rng : random.Random | None, optional
+        Random number generator instance. When provided the sequence is
+        deterministic and isolated from the global RNG state.
+    backoff_threshold : int, optional
+        Number of consecutive missing contexts before falling back to a random
+        context. Default is ``1``.
+    """
+    rng = rng or random
     if not model:
         return ""
     # Try NanoGPT if available
@@ -329,26 +349,32 @@ def generate(model, length: int = 80, seed: str | None = None) -> str:
                 context = fallback
                 n = 2
         if not context or context not in m:
-            context = random.choice(list(m.keys()))
+            context = rng.choice(list(m.keys()))
             n = len(context) + 1
     out = context
+    missing = 0
     for _ in range(length - len(context)):
         freq = m.get(context)
         if not freq:
+            missing += 1
             if n > 2:
                 context = context[-1:]
                 n = 2
                 freq = m.get(context)
         if not freq:
-            context = random.choice(list(m.keys()))
-            n = len(context) + 1
-            if len(out) + len(context) > length:
-                break
-            out += context
+            if missing >= backoff_threshold:
+                context = rng.choice(list(m.keys()))
+                n = len(context) + 1
+                missing = 0
+                if len(out) + len(context) > length:
+                    break
+                out += context
             continue
+        else:
+            missing = 0
         chars = list(freq.keys())
         weights = list(freq.values())
-        ch = random.choices(chars, weights=weights)[0]
+        ch = rng.choices(chars, weights=weights)[0]
         out += ch
         context = out[-(n - 1) :]
     return out[:length]
