@@ -1,4 +1,4 @@
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from . import mini_le
 
 
@@ -28,4 +28,4 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == '__main__':
     import sys
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-    HTTPServer(('', port), Handler).serve_forever()
+    ThreadingHTTPServer(('', port), Handler).serve_forever()
