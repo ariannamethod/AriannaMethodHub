@@ -271,6 +271,10 @@ Retraining can now be limited via a new `reproduction_interval` setting. Wheneve
 
 The helper `_maybe_reproduce()` checks this timestamp for `check_*_updates()` and the main `run()` loop. This prevents runaway retraining when logs or datasets change rapidly while still ensuring that new material eventually influences the model. Set `ARIANNA_REPRO_INTERVAL=0` to disable the delay entirely if immediate retraining is preferred.
 
+### Safe Mode
+
+Set `ARIANNA_SAFE_MODE=1` to disable optional modules like the evolving skin, entropy resonance and pain feedback. This provides a minimal chat experience focused solely on the LÉ persona without automatic visual or behavioral adjustments.
+
 
 Contributing
 

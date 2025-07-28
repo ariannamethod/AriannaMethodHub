@@ -63,6 +63,13 @@ FEATURES = {
     "bio_evolution": True,
 }
 
+# Allow disabling all optional features at once
+_safe = os.getenv("ARIANNA_SAFE_MODE", "0").lower() in {"1", "true", "yes"}
+if _safe:
+    for key in FEATURES:
+        FEATURES[key] = False
+
+
 
 def is_enabled(feature_name: str) -> bool:
     """Return ``True`` if ``feature_name`` is enabled."""
