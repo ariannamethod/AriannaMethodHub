@@ -5,6 +5,8 @@ import sqlite3
 import gzip
 import shutil
 import hashlib
+
+from . import entropy_resonance
 from datetime import datetime
 from typing import Dict
 
@@ -228,6 +230,53 @@ def dream_cycle(threshold: int = 300) -> str | None:
     return dream
 
 
+def _entropy_metrics() -> dict:
+    values = []
+    if os.path.exists(entropy_resonance.LOG_FILE):
+        with open(entropy_resonance.LOG_FILE, "r", encoding="utf-8") as f:
+            for line in f:
+                if "entropy=" in line:
+                    part = line.split("entropy=")[-1].split()[0]
+                    try:
+                        values.append(float(part))
+                    except ValueError:
+                        pass
+    avg = sum(values) / len(values) if values else 0.0
+    peak = max(values) if values else 0.0
+    current = values[-1] if values else 0.0
+    return {"avg_entropy": avg, "peak_entropy": peak, "current_entropy": current}
+
+
+def _resonant_word_freq() -> dict:
+    from . import skin
+    counts = {w: 0 for w in skin.WORDS}
+    total_chars = 0
+    for path in [LOG_FILE, HUMAN_LOG]:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read().lower()
+            total_chars += len(text)
+            for w in skin.WORDS:
+                counts[w] += text.count(w)
+    return {
+        w: counts[w] / total_chars if total_chars else 0.0
+        for w in counts
+    }
+
+
+def _mutation_success_rate() -> float:
+    total = 0
+    success = 0
+    if os.path.exists(entropy_resonance.LOG_FILE):
+        with open(entropy_resonance.LOG_FILE, "r", encoding="utf-8") as f:
+            for line in f:
+                if "changed=" in line:
+                    total += 1
+                    if "changed=True" in line:
+                        success += 1
+    return success / total if total else 0.0
+
+
 def health_report() -> dict:
     """Return basic health metrics for the system."""
     report = {
@@ -245,6 +294,9 @@ def health_report() -> dict:
         report["generation_ok"] = False
         report["recent_novelty"] = 0.0
     report["immune_blocked"] = IMMUNE_BLOCKED
+    report.update(_entropy_metrics())
+    report["resonant_word_freq"] = _resonant_word_freq()
+    report["mutation_success_rate"] = _mutation_success_rate()
     if os.path.exists(REPRO_FILE):
         with open(REPRO_FILE, "r", encoding="utf-8") as f:
             report["last_reproduction"] = f.read().strip()

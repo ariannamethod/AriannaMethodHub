@@ -31,21 +31,17 @@ def evolve_skin(index_path: str = INDEX_PATH) -> str:
     ent = calculate_entropy(output)
     aff = affinity(output)
 
-    if ent < 4:
-        bg_color = '#000000'
-    elif ent < 6 and aff < 0.2:
-        bg_color = '#00FF00'
-    elif ent >= 6:
-        bg_color = '#FF0000'
-    elif aff > 0.3:
+    ratio = max(0.0, min(ent / 6.0, 1.0))
+    r = int(255 * ratio)
+    g = int(255 * (1 - ratio))
+    bg_color = f"#{r:02X}{g:02X}00"
+    if aff > 0.3:
         bg_color = '#FF4500'
-    else:
-        bg_color = '#008000'
-    flash = 'animation: flash 1s infinite;' if ent > 5 else ''
+    flash = 'animation: chaos 1s infinite;' if ent > 4.5 else ''
     css = (
-        f'body {{ background-color: {bg_color}; color: #00FF00; {flash} }} '
-        '@keyframes flash { 0% { opacity: 1; } '
-        '50% { opacity: 0.5; } 100% { opacity: 1; } }'
+        f'body {{ background: {bg_color}; color: #00FF00; {flash} }} '
+        '@keyframes chaos { 0% { filter: hue-rotate(0deg); } '
+        '50% { filter: hue-rotate(180deg); } 100% { filter: hue-rotate(360deg); } }'
     )
 
     with open(index_path, 'r', encoding='utf-8') as f:
