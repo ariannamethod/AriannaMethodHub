@@ -192,6 +192,31 @@ Interactive chats are rate‑limited via `_allowed_messages()` which grows the l
 
 **Optimization ideas:** consider replacing the naive tokenizer with a faster library, caching retrieval vectors to speed up queries, and pruning old log files more aggressively to reduce disk usage.
 
+### Biological Evolution Layer
+
+The codebase now models a simple form of data metabolism. A helper `metabolize_input()`
+measures the novelty of each incoming phrase against the existing corpus and
+produces a score between 0 and 1. These values feed into lightweight health
+metrics so you can see how fresh the latest interactions are.
+
+An `immune_filter()` guards the chat loop from toxic phrases. It scans input for
+a small blacklist of words and quietly rejects anything suspicious. Each block
+is counted so `health_report()` reflects how often the filter intervened.
+
+`adaptive_mutation()` introduces random tweaks to the Markov weights. The system
+generates a short sample before and after the mutation and keeps the change only
+if the novelty score improves. Over time this encourages more diverse phrasing
+without ballooning the model size.
+
+The `reproduction_cycle()` routine retrains the model from all available data
+and applies an adaptive mutation. It writes a timestamp so you can track when a
+new "generation" was produced. The main `run()` loop now calls this cycle after
+each evolution step, letting the tiny network gradually refine itself.
+
+Additional fields in `health_report()` expose the recent novelty score, the
+number of blocked messages, and the timestamp of the last reproduction. Together
+these metrics offer a quick glimpse into the system's overall vitality.
+
 Contributing
 
 1. Fork → Feature branch → PR
