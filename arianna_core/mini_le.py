@@ -558,7 +558,19 @@ def run():
     check_utility_updates()
     check_log_updates()
     text = load_data()
-    model = train(text)
+    model_mtime = os.path.getmtime(MODEL_FILE) if os.path.exists(MODEL_FILE) else 0
+    ds_time = os.path.getmtime(STATE_FILE) if os.path.exists(STATE_FILE) else 0
+    util_time = os.path.getmtime(UTIL_STATE_FILE) if os.path.exists(UTIL_STATE_FILE) else 0
+    log_time = os.path.getmtime(LOG_STATE_FILE) if os.path.exists(LOG_STATE_FILE) else 0
+    retrain = not os.path.exists(MODEL_FILE) or any(
+        t > model_mtime for t in (ds_time, util_time, log_time)
+    )
+    if retrain:
+        model = train(text)
+    else:
+        model = load_model()
+        if not model:
+            model = train(text)
     comment = generate(model)
     global RECENT_NOVELTY
     RECENT_NOVELTY = metabolize_input(comment)
@@ -579,7 +591,8 @@ def run():
     evolve(f"ping:{comment[:10]}")
     try:
         evolve_cycle()
-        reproduction_cycle()
+        if retrain:
+            reproduction_cycle()
         dream_cycle()
     except Exception as e:
         print("evolve_cycle failed:", e)
