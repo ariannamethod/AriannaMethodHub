@@ -202,6 +202,22 @@ ruff check .
 pytest -vv
 ```
 
+### Safe Evolution Utility
+
+`evolution_safe.py` keeps experiments reversible. When invoked, it copies the
+entire repository to a sibling directory whose name ends with `_snapshot` and
+then writes a tiny mutation to `arianna_core/evolution_steps.py`. If the mutated
+file passes a syntax check, the snapshot is refreshed. Otherwise the snapshot is
+restored so all logs remain intact. You can trigger a cycle manually with:
+
+```sh
+python -c "from arianna_core.evolution_safe import evolve_cycle; evolve_cycle()"
+```
+
+`mini_le.py` already calls `evolve_cycle()` after each logged message, ensuring
+that the system continues to grow from its textual traces without ever relying
+on static weights.
+
 ## License
 
 Source code is distributed under the [GNU GPLv3](LICENSE).
