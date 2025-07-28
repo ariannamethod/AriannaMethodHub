@@ -23,8 +23,9 @@ body {
     padding: 0;
     margin: 0;
     overflow-x: hidden;
+    overflow-y: auto;
     position: relative;
-    min-height: 100vh;
+    height: 100vh;
 }
 
 /* Subtle matrix rain effect in background */
@@ -46,6 +47,20 @@ body::before {
     margin: 0 auto;
     padding: 20px;
     position: relative;
+}
+
+#scroll-container {
+    overflow: hidden;
+    height: 100vh;
+}
+
+#scroll-content {
+    animation: scroll-up 40s linear forwards;
+}
+
+@keyframes scroll-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(-100%); }
 }
 
 /* Header Styles */
@@ -272,8 +287,14 @@ footer p {
 #chat-container {
     position: fixed;
     bottom: 20px;
-    left: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     color: var(--matrix-green);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 0 20px;
 }
 
 #chat-input {
@@ -282,11 +303,15 @@ footer p {
     border: 1px solid var(--matrix-blue);
     padding: 4px;
     box-shadow: 0 0 5px var(--matrix-blue);
+    width: 200px;
+    transition: width 0.3s, height 0.3s;
 }
 
 #chat-input:focus {
     outline: none;
     box-shadow: 0 0 10px var(--matrix-blue);
+    width: 80vw;
+    height: 80px;
 }
 
 #chat-response {

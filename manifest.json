@@ -1,0 +1,9 @@
+{
+  "name": "Arianna Method",
+  "short_name": "Arianna",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00ff00"
+}
+
