@@ -52,3 +52,19 @@ class Settings:
 
 
 settings = Settings()
+
+# Feature flags controlling optional modules
+FEATURES = {
+    "skin": False,
+    "entropy": True,
+    "pain": True,
+    "sixth_sense": True,
+    "hash_monitor": True,
+    "bio_evolution": True,
+}
+
+
+def is_enabled(feature_name: str) -> bool:
+    """Return ``True`` if ``feature_name`` is enabled."""
+    return FEATURES.get(feature_name, False)
+

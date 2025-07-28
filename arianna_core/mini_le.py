@@ -5,6 +5,7 @@ import sqlite3
 import gzip
 import shutil
 import hashlib
+import logging
 
 from . import entropy_resonance, pain
 import importlib
@@ -38,6 +39,23 @@ UTIL_STATE_FILE = os.path.join("arianna_core", "util_state.json")
 UTIL_CHANGE_LOG = os.path.join("arianna_core", "util_changes.log")
 LOG_STATE_FILE = os.path.join("arianna_core", "log_state.json")
 LOG_CHANGE_LOG = os.path.join("arianna_core", "log_changes.log")
+
+# Set by features for /health endpoint
+last_entropy = 0.0
+
+
+def safe_mode(buggy_feature: str, error_msg: str) -> None:
+    """Disable a problematic feature and record the error."""
+    from .config import FEATURES
+
+    FEATURES[buggy_feature] = False
+    log_path = os.path.join("arianna_core", "errors.log")
+    timestamp = datetime.now().isoformat()
+    with open(log_path, "a", encoding="utf-8") as f:
+        f.write(f"{timestamp} [{buggy_feature}] auto-disabled: {error_msg}\n")
+    logging.warning("Feature %s disabled due to error: %s", buggy_feature, error_msg)
+
+
 
 
 def reproduction_allowed() -> bool:

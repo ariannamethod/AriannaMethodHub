@@ -3,7 +3,9 @@ import random
 import os
 import importlib
 from datetime import datetime, timedelta
+import logging
 from arianna_core.pain import calculate_entropy, calculate_affinity, trigger_pain
+from .config import is_enabled
 
 _mini_le = None
 MODEL_FILE = None
@@ -24,8 +26,14 @@ def lorenz_distort(x: float, sigma: float = 10, rho: float = 28, beta: float = 8
     return x + dx
 
 
-def predict_next(model: dict) -> str:
+def predict_next(model: dict | None = None) -> str:
+    """Generate a prediction sample if the feature is enabled."""
+    if not is_enabled("sixth_sense"):
+        logging.info("[sixth_sense] feature disabled, skipping")
+        return ""
     _load_refs()
+    if model is None:
+        model = _mini_le.load_model()
     if not model:
         return ""
     m = model["model"] if "model" in model else model
@@ -38,6 +46,9 @@ def predict_next(model: dict) -> str:
 
 
 def check_prediction(actual_output: str) -> None:
+    if not is_enabled("sixth_sense"):
+        logging.info("[sixth_sense] feature disabled, skipping")
+        return
     _load_refs()
     if not os.path.exists(_mini_le.LOG_FILE):
         return
