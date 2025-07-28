@@ -1,7 +1,8 @@
 import os
+import json
 import random
 import argparse
-from arianna_core import mini_le
+from arianna_core import mini_le, entropy_resonance
 
 
 def load_logs():
@@ -13,14 +14,20 @@ def load_logs():
     return text
 
 
-def main(chaos: bool = False):
+def main(chaos: bool = False, entropy: bool = False):
     base = mini_le.load_data()
     logs = load_logs()
     if chaos:
         lines = logs.splitlines()
         random.shuffle(lines)
         logs = "\n".join(lines)
-    mini_le.train(base + logs)
+    model = mini_le.train(base + logs)
+    if entropy:
+        model = mini_le.reproduction_cycle()
+        model, ent, changed = entropy_resonance.entropy_resonance_mutate(model)
+        if changed:
+            with open(mini_le.MODEL_FILE, "w", encoding="utf-8") as f:
+                json.dump(model, f)
 
 
 if __name__ == "__main__":
@@ -30,5 +37,10 @@ if __name__ == "__main__":
         action="store_true",
         help="shuffle log lines before training",
     )
+    parser.add_argument(
+        "--entropy",
+        action="store_true",
+        help="apply entropy resonance mutation",
+    )
     args = parser.parse_args()
-    main(args.chaos)
+    main(args.chaos, args.entropy)
