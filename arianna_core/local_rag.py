@@ -23,13 +23,14 @@ class SimpleSearch:
 
     def __init__(self, snippets: List[str]):
         self.snippets = snippets
-        self.vectors = [_vectorize(_tokenize(s)) for s in snippets]
+        # Pre-compute and store token vectors keyed by snippet text
+        self.vectors = {s: _vectorize(_tokenize(s)) for s in snippets}
 
     def query(self, text: str, top_k: int = 3) -> List[str]:
         qvec = _vectorize(_tokenize(text))
         scored: List[Tuple[str, float]] = [
-            (snippet, _dot(vec, qvec))
-            for snippet, vec in zip(self.snippets, self.vectors)
+            (snippet, _dot(self.vectors[snippet], qvec))
+            for snippet in self.snippets
         ]
         scored.sort(key=lambda x: x[1], reverse=True)
         return [s for s, score in scored[:top_k] if score > 0]

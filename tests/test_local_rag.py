@@ -18,3 +18,24 @@ def test_query_no_match(tmp_path):
     search = local_rag.SimpleSearch(snippets)
     assert search.query("zzz") == []
 
+
+
+def test_query_no_recompute(tmp_path, monkeypatch):
+    doc = tmp_path / "doc.txt"
+    doc.write_text("x y z", encoding="utf-8")
+    snippets = local_rag.load_snippets([doc])
+    count = {"n": 0}
+    orig_vectorize = local_rag._vectorize
+
+    def counting_vectorize(tokens):
+        count["n"] += 1
+        return orig_vectorize(tokens)
+
+    monkeypatch.setattr(local_rag, "_vectorize", counting_vectorize)
+    search = local_rag.SimpleSearch(snippets)
+    assert count["n"] == len(snippets)
+
+    search.query("x")
+    search.query("y")
+    assert count["n"] == len(snippets) + 2
+
