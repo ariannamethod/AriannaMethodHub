@@ -15,3 +15,6 @@ requires-python = ">=3.8"
 where = ["."]
 include = ["arianna_core*"]
 
+[tool.arianna]
+n_gram_size = 2
+
