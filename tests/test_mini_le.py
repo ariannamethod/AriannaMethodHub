@@ -3,6 +3,7 @@ import json
 import sqlite3
 import random
 import time
+from datetime import datetime
 from arianna_core import mini_le  # noqa: E402
 
 
@@ -124,6 +125,11 @@ def _patch_chat(monkeypatch):
     monkeypatch.setattr(mini_le, "record_pattern", lambda *a, **k: None)
     monkeypatch.setattr(mini_le, "evolve", lambda *a, **k: None)
     monkeypatch.setattr(mini_le, "metabolize_input", lambda t, n=None: 0)
+    monkeypatch.setattr(
+        mini_le,
+        "resonance_report",
+        lambda: {"total_patterns": 0, "repeated_patterns": 0, "resonance_frequency": 0.0},
+    )
 
 
 def test_chat_response_uses_nanogpt(monkeypatch):
@@ -208,10 +214,10 @@ def test_check_dataset_updates_triggers_reproduction(tmp_path, monkeypatch):
     monkeypatch.setattr(mini_le, "DATA_DIR", str(data_dir))
     monkeypatch.setattr(mini_le, "STATE_FILE", str(state))
     monkeypatch.setattr(mini_le, "CORE_FILES", [])
-    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: None)
+    monkeypatch.setattr(mini_le, "_maybe_reproduce", lambda: None)
     mini_le.check_dataset_updates()
     called = []
-    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: called.append(True))
+    monkeypatch.setattr(mini_le, "_maybe_reproduce", lambda: called.append(True))
     file1.write_text("b", encoding="utf-8")
     mini_le.check_dataset_updates()
     assert called
@@ -227,12 +233,26 @@ def test_check_log_updates_triggers_reproduction(tmp_path, monkeypatch):
     monkeypatch.setattr(mini_le, "LOG_STATE_FILE", str(state))
     monkeypatch.setattr(mini_le, "LOG_CHANGE_LOG", str(change))
     log.write_text("x", encoding="utf-8")
-    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: None)
+    monkeypatch.setattr(mini_le, "_maybe_reproduce", lambda: None)
     mini_le.check_log_updates()
     called = []
-    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: called.append(True))
+    monkeypatch.setattr(mini_le, "_maybe_reproduce", lambda: called.append(True))
     time.sleep(1)
     log.write_text("y", encoding="utf-8")
     mini_le.check_log_updates()
+    assert called
+
+
+def test_maybe_reproduce_respects_interval(tmp_path, monkeypatch):
+    repro = tmp_path / "repro.txt"
+    monkeypatch.setattr(mini_le, "REPRO_FILE", str(repro))
+    monkeypatch.setattr(mini_le.settings, "reproduction_interval", 60)
+    repro.write_text(datetime.utcnow().isoformat(), encoding="utf-8")
+    called = []
+    monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: called.append(True))
+    mini_le._maybe_reproduce()
+    assert not called
+    repro.write_text("1970-01-01T00:00:00", encoding="utf-8")
+    mini_le._maybe_reproduce()
     assert called
 
