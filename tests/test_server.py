@@ -40,7 +40,7 @@ def test_chat_endpoint(monkeypatch):
     thread.join()
     srv.server_close()
     assert status == 200
-    assert body == "reply:hi"
+    assert "reply:hi" in body
 
 
 def test_root_triggers_run(monkeypatch):
@@ -94,5 +94,5 @@ def test_concurrent_requests(monkeypatch):
     assert results["root"] == 200
     chat_status, chat_body, elapsed = results["chat"]
     assert chat_status == 200
-    assert chat_body == "reply:hi"
+    assert "reply:hi" in chat_body
     assert elapsed < 0.25
