@@ -200,6 +200,10 @@ Interactive chats are rate‑limited via `_allowed_messages()` which grows the l
 ### Implemented Optimizations
 
 The search module now relies on the `regex` library for faster tokenization and caches query vectors so repeated lookups require less computation. Log rotation also prunes old archives, keeping only the most recent few and reclaiming disk space.
+ 
+A shared `rotate_log()` helper now manages all system logs. The main loop calls it before appending to `log.txt`, and `dream_cycle()` and the entropy resonance routine use the same function for `dream.log` and `entropy.log`. This keeps every log from growing without bound.
+
+New unit tests simulate oversized logs and confirm that each file compresses into timestamped archives when these functions run. This ensures rotation stays reliable as the project evolves.
 
 ### Biological Evolution Layer
 

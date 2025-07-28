@@ -36,13 +36,40 @@ def test_log_rotation(tmp_path, monkeypatch):
     log = tmp_path / "human.log"
     monkeypatch.setattr(mini_le, "HUMAN_LOG", str(log))
     monkeypatch.setattr(mini_le, "LOG_MAX_BYTES", 10)
-    log.write_text("x" * 11)
+    log.write_text("0 a\n" * 4)
     mini_le.log_interaction("hi", "ok")
     rotated = list(tmp_path.glob("human.log.*.gz"))
     assert len(rotated) == 1
     index = log.with_suffix(".log.index")
     assert index.exists()
     assert log.read_text(encoding="utf-8").endswith("AI:ok\n")
+
+
+def test_log_txt_rotation(tmp_path, monkeypatch):
+    log = tmp_path / "log.txt"
+    monkeypatch.setattr(mini_le, "LOG_FILE", str(log))
+    monkeypatch.setattr(mini_le, "LOG_MAX_BYTES", 10)
+    _patch_run(monkeypatch)
+    log.write_text("0 a\n" * 4)
+    mini_le.run()
+    rotated = list(tmp_path.glob("log.txt.*.gz"))
+    assert len(rotated) == 1
+    assert log.exists()
+
+
+def test_dream_log_rotation(tmp_path, monkeypatch):
+    log = tmp_path / "dream.log"
+    monkeypatch.setattr(mini_le, "DREAM_LOG", str(log))
+    monkeypatch.setattr(mini_le, "LOG_MAX_BYTES", 10)
+    log.write_text("x" * 11)
+    monkeypatch.setattr(mini_le, "load_model", lambda: {"n": 2, "model": {"a": {"b": 1}}})
+    monkeypatch.setattr(mini_le, "generate", lambda *a, **k: "dream")
+    monkeypatch.setattr(mini_le, "log_interaction", lambda *a, **k: None)
+    monkeypatch.setattr(mini_le, "record_pattern", lambda *a, **k: None)
+    result = mini_le.dream_cycle(threshold=0)
+    assert result == "dream"
+    rotated = list(tmp_path.glob("dream.log.*.gz"))
+    assert len(rotated) == 1
 
 
 def test_evolve_appends_entry(tmp_path, monkeypatch):
@@ -130,6 +157,21 @@ def _patch_chat(monkeypatch):
         "resonance_report",
         lambda: {"total_patterns": 0, "repeated_patterns": 0, "resonance_frequency": 0.0},
     )
+
+
+def _patch_run(monkeypatch):
+    monkeypatch.setattr(mini_le, "check_utility_updates", lambda: None)
+    monkeypatch.setattr(mini_le, "check_log_updates", lambda: None)
+    monkeypatch.setattr(mini_le, "load_data", lambda: "ab")
+    monkeypatch.setattr(mini_le, "train", lambda t: {"n": 2, "model": {"a": {"b": 1}}})
+    monkeypatch.setattr(mini_le, "load_model", lambda: {"n": 2, "model": {"a": {"b": 1}}})
+    monkeypatch.setattr(mini_le, "generate", lambda *a, **k: "ab")
+    monkeypatch.setattr(mini_le, "update_index", lambda *a, **k: None)
+    monkeypatch.setattr(mini_le, "evolve_cycle", lambda: None)
+    monkeypatch.setattr(mini_le, "_maybe_reproduce", lambda: None)
+    monkeypatch.setattr(mini_le, "dream_cycle", lambda: None)
+    monkeypatch.setattr(mini_le, "record_pattern", lambda *a, **k: None)
+    monkeypatch.setattr(mini_le, "evolve", lambda *a, **k: None)
 
 
 def test_chat_response_uses_nanogpt(monkeypatch):
