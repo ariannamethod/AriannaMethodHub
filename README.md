@@ -148,7 +148,7 @@ All exchanges are saved to `arianna_core/humanbridge.log`. Each line records the
 
 ### Genesis Utility
 
-The new `genesis.py` script strengthens the miniature network by retraining it on both the original texts and every logged conversation. Run it periodically to incorporate fresh resonance patterns from your dialogues.
+The `genesis.py` script strengthens the miniature network by retraining it on both the original texts and every logged conversation. It now accepts a `--chaos` flag that shuffles log lines before training, injecting a small dose of randomness into the model. Run it periodically to incorporate fresh resonance patterns from your dialogues.
 
 ### Persona Prompt
 
@@ -194,7 +194,9 @@ The code now persists observed text patterns in a small SQLite database named `m
 
 Interactive chats are rate‑limited via `_allowed_messages()` which grows the limit as your history file expands. The last generated comment is mirrored back into the page for continuity whenever you reload `index.html`.
 
-**Optimization ideas:** consider replacing the naive tokenizer with a faster library, caching retrieval vectors to speed up queries, and pruning old log files more aggressively to reduce disk usage.
+### Implemented Optimizations
+
+The search module now relies on the `regex` library for faster tokenization and caches query vectors so repeated lookups require less computation. Log rotation also prunes old archives, keeping only the most recent few and reclaiming disk space.
 
 ### Biological Evolution Layer
 

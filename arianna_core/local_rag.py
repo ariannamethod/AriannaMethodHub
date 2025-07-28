@@ -1,10 +1,22 @@
-import re
+try:
+    import regex as re  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    import re
+from functools import lru_cache
 from typing import List, Tuple
+
+_TOKEN_RE = re.compile(r"\b\w+\b")
 
 
 def _tokenize(text: str) -> List[str]:
     """Return a list of lowercase words."""
-    return re.findall(r"\b\w+\b", text.lower())
+    return _TOKEN_RE.findall(text.lower())
+
+
+@lru_cache(maxsize=128)
+def _vectorize_cached(text: str) -> dict:
+    """Return cached vector representation for ``text``."""
+    return _vectorize(_tokenize(text))
 
 
 def _vectorize(tokens: List[str]) -> dict:
@@ -27,7 +39,7 @@ class SimpleSearch:
         self.vectors = {s: _vectorize(_tokenize(s)) for s in snippets}
 
     def query(self, text: str, top_k: int = 3) -> List[str]:
-        qvec = _vectorize(_tokenize(text))
+        qvec = _vectorize_cached(text)
         scored: List[Tuple[str, float]] = [
             (snippet, _dot(self.vectors[snippet], qvec))
             for snippet in self.snippets

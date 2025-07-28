@@ -1,4 +1,6 @@
 import os
+import random
+import argparse
 from arianna_core import mini_le
 
 
@@ -11,11 +13,22 @@ def load_logs():
     return text
 
 
-def main():
+def main(chaos: bool = False):
     base = mini_le.load_data()
     logs = load_logs()
+    if chaos:
+        lines = logs.splitlines()
+        random.shuffle(lines)
+        logs = "\n".join(lines)
     mini_le.train(base + logs)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Regenerate model with logs")
+    parser.add_argument(
+        "--chaos",
+        action="store_true",
+        help="shuffle log lines before training",
+    )
+    args = parser.parse_args()
+    main(args.chaos)
