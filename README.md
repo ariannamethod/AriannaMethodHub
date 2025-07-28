@@ -40,7 +40,14 @@ For the interactive chat interface start the bundled server:
 ./serve.sh 8000
 ```
 
-This invokes `python3 -m arianna_core.server` under the hood.
+This invokes `python3 -m arianna_core.server` under the hood. The server can
+also be launched manually with either:
+
+```sh
+python -m arianna_core.server
+# or
+python arianna_core/server.py
+```
 
 ## Scientific Foundations
 

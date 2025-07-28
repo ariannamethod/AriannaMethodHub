@@ -3,8 +3,17 @@ import threading
 import asyncio
 import logging
 import json
-from . import mini_le, entropy_resonance, pain, sixth_feeling
-from .config import is_enabled, FEATURES
+
+if __package__ is None:
+    import os
+    import sys
+
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from arianna_core import mini_le, entropy_resonance, pain, sixth_feeling
+    from arianna_core.config import is_enabled, FEATURES
+else:
+    from . import mini_le, entropy_resonance, pain, sixth_feeling
+    from .config import is_enabled, FEATURES
 
 
 def background(fn, *args, **kwargs):
