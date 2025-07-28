@@ -8,7 +8,9 @@ body {
 }
 #terminal {
     white-space: pre-wrap;
-    min-height: 80vh;
+    overflow-y: auto;
+    height: 80vh;
+    margin-bottom: 10px;
 }
 #input-form {
     display: flex;
@@ -24,4 +26,12 @@ body {
     outline: none;
     flex: 1;
 }
-.cursor { margin-left: 2px; }
+.cursor {
+    margin-left: 5px;
+    animation: blink 1s step-start infinite;
+}
+
+@keyframes blink {
+    from, to { opacity: 1; }
+    50% { opacity: 0; }
+}
