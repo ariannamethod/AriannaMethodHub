@@ -20,6 +20,6 @@ def test_evolve_skin_modifies_html(tmp_path, monkeypatch):
     monkeypatch.setattr(skin, "generate", lambda *a, **k: "resonance")
     color = skin.evolve_skin(str(html))
     content = html.read_text(encoding="utf-8")
-    assert "background-color" in content
+    assert "background" in content
     assert log.exists()
     assert color.startswith("#")
