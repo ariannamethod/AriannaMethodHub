@@ -5,6 +5,7 @@ import sqlite3
 import gzip
 import shutil
 from datetime import datetime
+from typing import Dict
 
 from .evolution_safe import evolve_cycle
 from .config import settings
@@ -19,6 +20,10 @@ MEMORY_DB = os.path.join("arianna_core", "memory.db")
 LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
 NGRAM_SIZE = settings.n_gram_size
 CHAT_SESSION_COUNT = 0
+REPRO_FILE = os.path.join("arianna_core", "last_reproduction.txt")
+IMMUNE_BLOCKED = 0
+RECENT_NOVELTY = 0.0
+TOXIC_WORDS = {"kill", "hate", "badword"}
 
 
 def _allowed_messages() -> int:
@@ -75,6 +80,64 @@ def record_pattern(pattern: str) -> None:
     conn.close()
 
 
+def metabolize_input(text: str, n: int | None = None) -> float:
+    """Return novelty ratio of ``text`` based on the current model."""
+    model = load_model()
+    if not model:
+        return 1.0
+    if n is None:
+        n = model.get("n", 2) if isinstance(model, dict) else NGRAM_SIZE
+    m = model["model"] if "model" in model else model
+    total = max(1, len(text) - n + 1)
+    unseen = 0
+    for i in range(total):
+        ctx = text[i : i + n - 1]
+        if ctx not in m:
+            unseen += 1
+    return unseen / total
+
+
+def immune_filter(text: str) -> bool:
+    """Return ``True`` if ``text`` is acceptable; increment counter if not."""
+    global IMMUNE_BLOCKED
+    lowered = text.lower()
+    if any(bad in lowered for bad in TOXIC_WORDS):
+        IMMUNE_BLOCKED += 1
+        return False
+    return True
+
+
+def adaptive_mutation(model: Dict) -> Dict:
+    """Apply a random mutation and keep it if novelty improves."""
+    if not model:
+        return model
+    orig_sample = generate(model, 20)
+    baseline = metabolize_input(orig_sample, n=model.get("n", 2))
+    mutated = json.loads(json.dumps(model))
+    m = mutated["model"] if "model" in mutated else mutated
+    ctx = random.choice(list(m.keys()))
+    freq = m[ctx]
+    ch = random.choice(list(freq.keys()))
+    delta = random.choice([-1, 1])
+    freq[ch] = max(1, freq.get(ch, 1) + delta)
+    new_sample = generate(mutated, 20)
+    if metabolize_input(new_sample, n=mutated.get("n", 2)) >= baseline:
+        return mutated
+    return model
+
+
+def reproduction_cycle() -> Dict:
+    """Retrain the model and apply an adaptive mutation."""
+    text = load_data()
+    model = train(text)
+    improved = adaptive_mutation(model)
+    with open(REPRO_FILE, "w", encoding="utf-8") as f:
+        f.write(datetime.utcnow().isoformat())
+    with open(MODEL_FILE, "w", encoding="utf-8") as f:
+        json.dump(improved, f)
+    return improved
+
+
 def health_report() -> dict:
     """Return basic health metrics for the system."""
     report = {
@@ -87,8 +150,16 @@ def health_report() -> dict:
         model = load_model()
         sample = generate(model, 20) if model else ""
         report["generation_ok"] = bool(sample)
+        report["recent_novelty"] = metabolize_input(sample) if sample else 0.0
     except Exception:
         report["generation_ok"] = False
+        report["recent_novelty"] = 0.0
+    report["immune_blocked"] = IMMUNE_BLOCKED
+    if os.path.exists(REPRO_FILE):
+        with open(REPRO_FILE, "r", encoding="utf-8") as f:
+            report["last_reproduction"] = f.read().strip()
+    else:
+        report["last_reproduction"] = None
     return report
 
 # dataset helpers
@@ -279,11 +350,14 @@ def evolve(entry: str) -> None:
 
 
 def chat_response(user_text: str) -> str:
-    global CHAT_SESSION_COUNT
+    global CHAT_SESSION_COUNT, RECENT_NOVELTY
     allowed = _allowed_messages()
     if CHAT_SESSION_COUNT >= allowed:
         return "MESSAGE LIMIT REACHED"
+    if not immune_filter(user_text):
+        return "CONTENT BLOCKED"
     CHAT_SESSION_COUNT += 1
+    RECENT_NOVELTY = metabolize_input(user_text)
     text = load_data()
     model = train(text)
     seed = user_text[-1] if user_text else None
@@ -298,6 +372,8 @@ def run():
     text = load_data()
     model = train(text)
     comment = generate(model)
+    global RECENT_NOVELTY
+    RECENT_NOVELTY = metabolize_input(comment)
     previous = []
     if os.path.exists(LOG_FILE):
         with open(LOG_FILE, "r", encoding="utf-8") as f:
@@ -315,6 +391,7 @@ def run():
     evolve(f"ping:{comment[:10]}")
     try:
         evolve_cycle()
+        reproduction_cycle()
     except Exception as e:
         print("evolve_cycle failed:", e)
 
