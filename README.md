@@ -186,6 +186,18 @@ Feel free to modify the prompt, clear the logs, or extend the interface. Each ad
 
 The project now includes a lightweight retrieval module `local_rag`. It splits texts into paragraphs and performs a simple vector search to surface relevant snippets. The design borrows ideas from community tutorials on retrieval‑augmented generation and was implemented to keep dependencies minimal.
 
+Recent updates extend the tiny neural engine in several ways:
+
+- A new configuration option `n_gram_level` sets the base n‑gram order. When the
+  corpus grows beyond 10k characters the generator automatically adapts up to a
+  trigram level for more coherent responses.
+- A background `dream_cycle()` runs during idle periods. It generates text on its
+  own, records the result as a pattern and immediately folds it back into the
+  reproduction loop so the system can evolve without user prompts.
+- `health_report()` now includes resonance metrics derived from recorded
+  patterns. The metrics track how frequently topics repeat and surface the most
+  resonant phrases in memory.
+
 Tests have been expanded to cover this module alongside the existing `mini_le` routines. They ensure that the search logic works correctly and that core features remain stable after updates.
 
 Documentation was updated with a short note about the lineage of `mini_le`, tracing its roots to the LE‑AriannaMethod framework and projects like TinyLlama and nanoGPT. These references highlight how the hub builds on established open‑source efforts.
