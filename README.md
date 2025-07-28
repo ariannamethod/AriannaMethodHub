@@ -233,9 +233,18 @@ Alongside entropy, the script calculates an "affinity" score that reflects how o
 
 `evolve_skin()` rewrites the `<style>` section of `index.html` with the new color scheme and logs each change. The routine is called automatically at the end of the `mini_le` run cycle, ensuring the interface visually mirrors the latest state of the Markov generator.
 
+
 While the core still relies on a basic n‑gram model, the skin utility hints at more ambitious directions. Because style updates depend only on the generated text, you could swap in a more complex language model without altering the interface logic. The optional nanoGPT backend already lays a small foundation for stepping beyond a simple Markov chain.
 
 Together these pieces create a lightweight feedback loop: each message reshapes the page, which in turn becomes a visual echo of LE's current resonance. It's a minimal experiment in letting the tool's "body" adapt with its voice.
+
+A new entropy-resonance utility now amplifies that loop. The `arianna_core/entropy_resonance.py` module measures Shannon entropy for freshly generated text and triggers targeted mutations whenever the value crosses a resonance threshold. Each event is logged so you can observe how chaotic energy influences the model.
+
+Invoke the feature from `genesis.py` using the `--entropy` flag. After a normal `reproduction_cycle()` the script generates a sample, checks its entropy and boosts character frequencies that dominate high-entropy output. When the mutation succeeds the adjusted model is written back to disk.
+
+`mini_le.health_report()` exposes these dynamics with new metrics. It now returns average, peak and current entropy scores, lists how often resonant words appear and tracks the success rate of entropy-driven mutations.
+
+The skin system reflects these spikes visually. Gradient colors fade from calm green to stormy red and a chaotic hue-rotation animation engages when entropy surpasses 4.5, making the interface pulse with the system's creative turbulence.
 
 ### Throttled Reproduction
 
