@@ -24,7 +24,22 @@ def test_reproduction_cycle(tmp_path, monkeypatch):
     sample = tmp_path / "sample.txt"
     sample.write_text("abc", encoding="utf-8")
     monkeypatch.setattr(mini_le, "get_data_files", lambda: [str(sample)])
+    monkeypatch.setattr(mini_le, "maintain_pattern_memory", lambda *a, **k: None)
     model = mini_le.reproduction_cycle()
     assert model_file.exists()
     assert repro_file.exists()
     assert isinstance(model, dict)
+
+
+def test_reproduction_cycle_calls_maintenance(tmp_path, monkeypatch):
+    model_file = tmp_path / "model.txt"
+    repro_file = tmp_path / "repro.txt"
+    called = []
+    monkeypatch.setattr(mini_le, "MODEL_FILE", str(model_file))
+    monkeypatch.setattr(mini_le, "REPRO_FILE", str(repro_file))
+    sample = tmp_path / "sample.txt"
+    sample.write_text("abc", encoding="utf-8")
+    monkeypatch.setattr(mini_le, "get_data_files", lambda: [str(sample)])
+    monkeypatch.setattr(mini_le, "maintain_pattern_memory", lambda *a, **k: called.append(True))
+    mini_le.reproduction_cycle()
+    assert called
