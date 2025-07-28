@@ -31,8 +31,24 @@
 </head>
 <body>
     <div id="chat-log"></div>
-    <form action="/chat" method="get">
+    <form id="chat-form" action="/chat" method="get">
         <input id="chat-input" name="msg" type="text" autofocus autocomplete="off">
     </form>
+    <script>
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('chat-input');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = input.value.trim();
+            if (!msg) return;
+            const resp = await fetch('/chat?msg=' + encodeURIComponent(msg), {
+                headers: { 'X-Requested-With': 'fetch' }
+            });
+            const html = await resp.text();
+            document.getElementById('chat-log').innerHTML = html;
+            input.value = '';
+            input.focus();
+        });
+    </script>
 </body>
 </html>
