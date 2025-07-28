@@ -186,6 +186,10 @@ Tests have been expanded to cover this module alongside the existing `mini_le` r
 
 Documentation was updated with a short note about the lineage of `mini_le`, tracing its roots to the LE‑AriannaMethod framework and projects like TinyLlama and nanoGPT. These references highlight how the hub builds on established open‑source efforts.
 
+The code now persists observed text patterns in a small SQLite database named `memory.db`, enabling basic frequency tracking across sessions. A helper `health_report()` exposes metrics such as model size and generation status so you can quickly check that everything is working.
+
+Interactive chats are rate‑limited via `_allowed_messages()` which grows the limit as your history file expands. The last generated comment is mirrored back into the page for continuity whenever you reload `index.html`.
+
 **Optimization ideas:** consider replacing the naive tokenizer with a faster library, caching retrieval vectors to speed up queries, and pruning old log files more aggressively to reduce disk usage.
 
 Contributing
