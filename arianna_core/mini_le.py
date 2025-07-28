@@ -20,9 +20,11 @@ MODEL_FILE = os.path.join("arianna_core", "model.txt")
 EVOLUTION_FILE = os.path.join("arianna_core", "evolution_steps.py")
 MEMORY_DB = os.path.join("arianna_core", "memory.db")
 LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
-NGRAM_SIZE = settings.n_gram_size
+NGRAM_LEVEL = settings.n_gram_level
 CHAT_SESSION_COUNT = 0
 REPRO_FILE = os.path.join("arianna_core", "last_reproduction.txt")
+LAST_ACTIVITY_FILE = os.path.join("arianna_core", "last_activity.txt")
+DREAM_LOG = os.path.join("arianna_core", "dream.log")
 IMMUNE_BLOCKED = 0
 RECENT_NOVELTY = 0.0
 TOXIC_WORDS = {"kill", "hate", "badword"}
@@ -90,7 +92,7 @@ def metabolize_input(text: str, n: int | None = None) -> float:
     if not model:
         return 1.0
     if n is None:
-        n = model.get("n", 2) if isinstance(model, dict) else NGRAM_SIZE
+        n = model.get("n", 2) if isinstance(model, dict) else NGRAM_LEVEL
     m = model["model"] if "model" in model else model
     total = max(1, len(text) - n + 1)
     unseen = 0
@@ -142,6 +144,28 @@ def reproduction_cycle() -> Dict:
     return improved
 
 
+def dream_cycle(threshold: int = 300) -> str | None:
+    """Generate autonomous output when user activity is low."""
+    if os.path.exists(LAST_ACTIVITY_FILE):
+        with open(LAST_ACTIVITY_FILE, "r", encoding="utf-8") as f:
+            ts = f.read().strip()
+        try:
+            last = datetime.fromisoformat(ts)
+        except ValueError:
+            last = datetime.utcnow()
+        if (datetime.utcnow() - last).total_seconds() < threshold:
+            return None
+    model = load_model()
+    if not model:
+        return None
+    dream = generate(model, length=60)
+    with open(DREAM_LOG, "a", encoding="utf-8") as f:
+        f.write(dream + "\n")
+    record_pattern(dream)
+    log_interaction("[DREAM]", dream)
+    return dream
+
+
 def health_report() -> dict:
     """Return basic health metrics for the system."""
     report = {
@@ -165,6 +189,32 @@ def health_report() -> dict:
     else:
         report["last_reproduction"] = None
     return report
+
+
+def resonance_report() -> dict:
+    """Return resonance metrics based on pattern memory."""
+    conn = sqlite3.connect(MEMORY_DB)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS patterns (pattern TEXT PRIMARY KEY, count INTEGER)"
+    )
+    rows = conn.execute("SELECT count FROM patterns").fetchall()
+    conn.close()
+    total = len(rows)
+    repeated = sum(1 for (c,) in rows if c > 1)
+    freq = repeated / total if total else 0.0
+    return {
+        "total_patterns": total,
+        "repeated_patterns": repeated,
+        "resonance_frequency": freq,
+    }
+
+
+def adjust_response_style(reply: str) -> str:
+    """Return reply adjusted based on resonance frequency."""
+    metrics = resonance_report()
+    if metrics["resonance_frequency"] > 0.3:
+        return reply + "!"
+    return reply
 
 # dataset helpers
 def _dataset_snapshot() -> dict:
@@ -243,7 +293,7 @@ def load_data():
     for f in get_data_files():
         with open(f, "r", encoding="utf-8") as fi:
             text += fi.read() + "\n"
-    for path in [LOG_FILE, HUMAN_LOG]:
+    for path in [LOG_FILE, HUMAN_LOG, DREAM_LOG]:
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as fi:
                 text += fi.read() + "\n"
@@ -253,7 +303,12 @@ def load_data():
 def train(text: str, n: int | None = None):
     """Train an ``n``-gram model from ``text``."""
     if n is None:
-        n = NGRAM_SIZE
+        n = NGRAM_LEVEL
+        length = len(text)
+        if length > 10000:
+            n = max(n, 3)
+        if length > 50000:
+            n = max(n, 4)
     if n < 2:
         n = 2
     model = {}
@@ -395,6 +450,8 @@ def log_interaction(user_text: str, ai_text: str) -> None:
         timestamp = datetime.utcnow().isoformat()
         f.write(f"{timestamp} USER:{user_text} AI:{ai_text}\n")
     record_pattern(user_text)
+    with open(LAST_ACTIVITY_FILE, "w", encoding="utf-8") as la:
+        la.write(timestamp)
 
 
 def evolve(entry: str) -> None:
@@ -436,6 +493,7 @@ def chat_response(user_text: str, *, use_nanogpt: bool | None = None) -> str:
         model = train(text)
         seed = user_text[-1] if user_text else None
         reply = generate(model, seed=seed)
+    reply = adjust_response_style(reply)
     log_interaction(user_text, reply)
     record_pattern(reply)
     evolve(f"chat:{user_text[:10]}->{reply[:10]}")
@@ -467,6 +525,7 @@ def run():
     try:
         evolve_cycle()
         reproduction_cycle()
+        dream_cycle()
     except Exception as e:
         print("evolve_cycle failed:", e)
 

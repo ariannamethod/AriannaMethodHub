@@ -16,6 +16,6 @@ where = ["."]
 include = ["arianna_core*"]
 
 [tool.arianna]
-n_gram_size = 2
+n_gram_level = 2
 use_nanogpt = false
 

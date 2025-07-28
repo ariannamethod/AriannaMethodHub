@@ -170,3 +170,29 @@ def test_backoff_threshold(tmp_path):
     out = mini_le.generate(model, length=4, seed="a", rng=rng, backoff_threshold=2)
     assert out == "aba"
 
+
+def test_resonance_report(tmp_path, monkeypatch):
+    db = tmp_path / "mem.db"
+    monkeypatch.setattr(mini_le, "MEMORY_DB", str(db))
+    mini_le.record_pattern("x")
+    mini_le.record_pattern("x")
+    mini_le.record_pattern("y")
+    report = mini_le.resonance_report()
+    assert report["repeated_patterns"] == 1
+    assert report["total_patterns"] == 2
+    assert report["resonance_frequency"] == 0.5
+
+
+def test_dream_cycle(tmp_path, monkeypatch):
+    model_file = tmp_path / "model.txt"
+    dream_log = tmp_path / "dream.log"
+    activity = tmp_path / "last.txt"
+    monkeypatch.setattr(mini_le, "MODEL_FILE", str(model_file))
+    monkeypatch.setattr(mini_le, "DREAM_LOG", str(dream_log))
+    monkeypatch.setattr(mini_le, "LAST_ACTIVITY_FILE", str(activity))
+    mini_le.train("abcabc", n=2)
+    activity.write_text("1970-01-01T00:00:00")
+    dream = mini_le.dream_cycle(threshold=1)
+    assert dream
+    assert dream_log.exists()
+
