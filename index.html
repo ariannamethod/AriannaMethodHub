@@ -1,54 +1,25 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>LÉ</title>
+    <title>LE - Simple</title>
     <style>
-        body {
-            background: #fff;
-            color: #000;
-            font-family: "Courier New", Courier, monospace;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        #chat-log {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        form { margin: 0; }
-        #chat-input {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 10px;
-            border-top: 1px solid #ccc;
-        }
-        .message { margin: 5px 0; }
+        body { background: #000; color: #0f0; font-family: monospace; margin: 0; }
+        #output { padding: 20px; height: 80vh; overflow-y: auto; }
+        #input { width: 100%; padding: 10px; background: #111; color: #0f0; border: none; }
     </style>
 </head>
 <body>
-    <div id="chat-log"></div>
-    <form id="chat-form" action="/chat" method="get">
-        <input id="chat-input" name="msg" type="text" autofocus autocomplete="off">
-    </form>
+    <div id="output">LE ready...</div>
+    <input id="input" placeholder="Type message..." />
     <script>
-        const form = document.getElementById('chat-form');
-        const input = document.getElementById('chat-input');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const msg = input.value.trim();
-            if (!msg) return;
-            const resp = await fetch('/chat?msg=' + encodeURIComponent(msg), {
-                headers: { 'X-Requested-With': 'fetch' }
-            });
-            const html = await resp.text();
-            document.getElementById('chat-log').innerHTML = html;
-            input.value = '';
-            input.focus();
-        });
+        document.getElementById('input').onkeypress = function(e) {
+            if (e.key === 'Enter') {
+                fetch('/chat?msg=' + encodeURIComponent(this.value))
+                    .then(r => r.text())
+                    .then(t => document.getElementById('output').innerHTML += '<br>> ' + t);
+                this.value = '';
+            }
+        }
     </script>
 </body>
 </html>
