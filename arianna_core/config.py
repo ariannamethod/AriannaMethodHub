@@ -9,6 +9,7 @@ class Settings:
 
     n_gram_level: int = 2
     use_nanogpt: bool = False
+    reproduction_interval: int = 3600  # seconds
 
     def __post_init__(self) -> None:
         # load from pyproject if available
@@ -31,12 +32,23 @@ class Settings:
             )
             flag = os.getenv("ARIANNA_USE_NANOGPT", str(use_ngpt))
             self.use_nanogpt = flag.lower() in {"1", "true", "yes"}
+            interval = (
+                data.get("tool", {})
+                .get("arianna", {})
+                .get("reproduction_interval", self.reproduction_interval)
+            )
+            self.reproduction_interval = int(
+                os.getenv("ARIANNA_REPRO_INTERVAL", str(interval))
+            )
         else:
             self.n_gram_level = int(
                 os.getenv("ARIANNA_NGRAM_LEVEL", os.getenv("ARIANNA_NGRAM_SIZE", self.n_gram_level))
             )
             flag = os.getenv("ARIANNA_USE_NANOGPT", str(self.use_nanogpt))
             self.use_nanogpt = flag.lower() in {"1", "true", "yes"}
+            self.reproduction_interval = int(
+                os.getenv("ARIANNA_REPRO_INTERVAL", str(self.reproduction_interval))
+            )
 
 
 settings = Settings()
