@@ -17,6 +17,13 @@ EVOLUTION_FILE = os.path.join("arianna_core", "evolution_steps.py")
 MEMORY_DB = os.path.join("arianna_core", "memory.db")
 LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
 NGRAM_SIZE = 2
+CHAT_SESSION_COUNT = 0
+
+
+def _allowed_messages() -> int:
+    """Return the number of allowed chat messages based on log size."""
+    size = os.path.getsize(HUMAN_LOG) if os.path.exists(HUMAN_LOG) else 0
+    return max(1, size // 1000 + 3)
 
 
 def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
@@ -255,6 +262,11 @@ def evolve(entry: str) -> None:
 
 
 def chat_response(user_text: str) -> str:
+    global CHAT_SESSION_COUNT
+    allowed = _allowed_messages()
+    if CHAT_SESSION_COUNT >= allowed:
+        return "MESSAGE LIMIT REACHED"
+    CHAT_SESSION_COUNT += 1
     text = load_data()
     model = train(text)
     seed = user_text[-1] if user_text else None

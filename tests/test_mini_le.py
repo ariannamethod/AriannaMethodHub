@@ -66,3 +66,19 @@ def test_record_pattern_and_health(tmp_path, monkeypatch):
     assert count == 2
     report = mini_le.health_report()
     assert isinstance(report, dict)
+
+
+def test_chat_limit_grows_with_logs(tmp_path, monkeypatch):
+    log = tmp_path / "human.log"
+    monkeypatch.setattr(mini_le, "HUMAN_LOG", str(log))
+    mini_le.CHAT_SESSION_COUNT = 0
+    # no history -> limit should be 3
+    resp1 = mini_le.chat_response("hi")
+    assert resp1 != "MESSAGE LIMIT REACHED"
+    for _ in range(mini_le._allowed_messages() - 1):
+        mini_le.chat_response("x")
+    assert mini_le.chat_response("extra") == "MESSAGE LIMIT REACHED"
+    # add history to increase allowed messages
+    log.write_text("line\n" * 20, encoding="utf-8")
+    mini_le.CHAT_SESSION_COUNT = 0
+    assert mini_le.chat_response("hi") != "MESSAGE LIMIT REACHED"
