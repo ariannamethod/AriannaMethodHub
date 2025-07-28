@@ -9,7 +9,7 @@ from typing import Dict
 
 from .evolution_safe import evolve_cycle
 from .config import settings
-CORE_FILES = ["README.md", "Arianna-Method-v2.9.md"]
+CORE_FILES = ["README.md", "Arianna-Method-v2.9.md", "index.html"]
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 STATE_FILE = os.path.join("arianna_core", "dataset_state.json")
 LOG_FILE = os.path.join("arianna_core", "log.txt")
@@ -24,6 +24,8 @@ REPRO_FILE = os.path.join("arianna_core", "last_reproduction.txt")
 IMMUNE_BLOCKED = 0
 RECENT_NOVELTY = 0.0
 TOXIC_WORDS = {"kill", "hate", "badword"}
+UTIL_STATE_FILE = os.path.join("arianna_core", "util_state.json")
+UTIL_CHANGE_LOG = os.path.join("arianna_core", "util_changes.log")
 
 
 def _allowed_messages() -> int:
@@ -172,6 +174,39 @@ def _dataset_snapshot() -> dict:
             if os.path.isfile(path):
                 snapshot[name] = os.path.getsize(path)
     return snapshot
+
+
+def _utility_snapshot() -> dict:
+    """Return a mapping of utility file paths to modification times."""
+    snapshot = {}
+    for root, _, files in os.walk("arianna_core"):
+        for name in files:
+            if name.endswith(".py"):
+                path = os.path.join(root, name)
+                snapshot[path] = os.path.getmtime(path)
+    return snapshot
+
+
+def check_utility_updates() -> None:
+    """Log utility changes and trigger retraining if needed."""
+    current = _utility_snapshot()
+    previous = {}
+    if os.path.exists(UTIL_STATE_FILE):
+        with open(UTIL_STATE_FILE, "r", encoding="utf-8") as f:
+            try:
+                previous = json.load(f)
+            except json.JSONDecodeError:
+                previous = {}
+    changed = [p for p, m in current.items() if previous.get(p) != m]
+    removed = [p for p in previous if p not in current]
+    if changed or removed:
+        with open(UTIL_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(current, f)
+        with open(UTIL_CHANGE_LOG, "a", encoding="utf-8") as log:
+            timestamp = datetime.utcnow().isoformat()
+            entries = ",".join(changed + removed)
+            log.write(f"{timestamp} {entries}\n")
+        reproduction_cycle()
 
 
 def check_dataset_updates() -> None:
@@ -351,6 +386,7 @@ def evolve(entry: str) -> None:
 
 def chat_response(user_text: str) -> str:
     global CHAT_SESSION_COUNT, RECENT_NOVELTY
+    check_utility_updates()
     allowed = _allowed_messages()
     if CHAT_SESSION_COUNT >= allowed:
         return "MESSAGE LIMIT REACHED"
@@ -369,6 +405,7 @@ def chat_response(user_text: str) -> str:
 
 
 def run():
+    check_utility_updates()
     text = load_data()
     model = train(text)
     comment = generate(model)
