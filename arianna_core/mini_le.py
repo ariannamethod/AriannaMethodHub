@@ -20,7 +20,8 @@ MODEL_FILE = os.path.join("arianna_core", "model.txt")
 EVOLUTION_FILE = os.path.join("arianna_core", "evolution_steps.py")
 MEMORY_DB = os.path.join("arianna_core", "memory.db")
 LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
-NGRAM_SIZE = settings.n_gram_size
+NGRAM_LEVEL = settings.n_gram_level
+NGRAM_SIZE = settings.n_gram_size or NGRAM_LEVEL
 CHAT_SESSION_COUNT = 0
 REPRO_FILE = os.path.join("arianna_core", "last_reproduction.txt")
 IMMUNE_BLOCKED = 0
@@ -28,6 +29,13 @@ RECENT_NOVELTY = 0.0
 TOXIC_WORDS = {"kill", "hate", "badword"}
 UTIL_STATE_FILE = os.path.join("arianna_core", "util_state.json")
 UTIL_CHANGE_LOG = os.path.join("arianna_core", "util_changes.log")
+
+
+def _adaptive_level(text_len: int) -> int:
+    """Return an n-gram level based on corpus size."""
+    if text_len > 10000:
+        return max(3, NGRAM_LEVEL)
+    return NGRAM_LEVEL
 
 
 def _allowed_messages() -> int:
@@ -82,6 +90,22 @@ def record_pattern(pattern: str) -> None:
     )
     conn.commit()
     conn.close()
+
+
+def resonance_metrics() -> dict:
+    """Return resonance frequency metrics from memory."""
+    conn = sqlite3.connect(MEMORY_DB)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS patterns (pattern TEXT PRIMARY KEY, count INTEGER)"
+    )
+    cur = conn.cursor()
+    total = cur.execute("SELECT SUM(count) FROM patterns").fetchone()[0] or 0
+    top = cur.execute(
+        "SELECT pattern, count FROM patterns ORDER BY count DESC LIMIT 3"
+    ).fetchall()
+    conn.close()
+    freq = {p: c / total for p, c in top} if total else {}
+    return {"total": total, "top": freq}
 
 
 def metabolize_input(text: str, n: int | None = None) -> float:
@@ -142,6 +166,16 @@ def reproduction_cycle() -> Dict:
     return improved
 
 
+def dream_cycle() -> None:
+    """Background self-generated dream cycle."""
+    text = load_data()
+    model = train(text)
+    dream = generate(model)
+    log_interaction("[dream]", dream)
+    record_pattern(dream)
+    reproduction_cycle()
+
+
 def health_report() -> dict:
     """Return basic health metrics for the system."""
     report = {
@@ -164,6 +198,7 @@ def health_report() -> dict:
             report["last_reproduction"] = f.read().strip()
     else:
         report["last_reproduction"] = None
+    report["resonance"] = resonance_metrics()
     return report
 
 # dataset helpers
@@ -253,7 +288,7 @@ def load_data():
 def train(text: str, n: int | None = None):
     """Train an ``n``-gram model from ``text``."""
     if n is None:
-        n = NGRAM_SIZE
+        n = _adaptive_level(len(text))
     if n < 2:
         n = 2
     model = {}
@@ -444,6 +479,8 @@ def chat_response(user_text: str, *, use_nanogpt: bool | None = None) -> str:
 
 def run():
     check_utility_updates()
+    if CHAT_SESSION_COUNT == 0:
+        dream_cycle()
     text = load_data()
     model = train(text)
     comment = generate(model)
