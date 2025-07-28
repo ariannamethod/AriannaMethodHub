@@ -11,7 +11,7 @@ from . import nanogpt_bridge
 
 from .evolution_safe import evolve_cycle
 from .config import settings
-CORE_FILES = ["README.md", "Arianna-Method-v2.9.md", "index.html"]
+CORE_FILES = ["README.md", "Arianna-Method-v2.9.md", "index.html", "le_persona_prompt.md"]
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 STATE_FILE = os.path.join("arianna_core", "dataset_state.json")
 LOG_FILE = os.path.join("arianna_core", "log.txt")
@@ -30,6 +30,8 @@ RECENT_NOVELTY = 0.0
 TOXIC_WORDS = {"kill", "hate", "badword"}
 UTIL_STATE_FILE = os.path.join("arianna_core", "util_state.json")
 UTIL_CHANGE_LOG = os.path.join("arianna_core", "util_changes.log")
+LOG_STATE_FILE = os.path.join("arianna_core", "log_state.json")
+LOG_CHANGE_LOG = os.path.join("arianna_core", "log_changes.log")
 
 
 def _allowed_messages() -> int:
@@ -225,6 +227,9 @@ def _dataset_snapshot() -> dict:
             path = os.path.join(DATA_DIR, name)
             if os.path.isfile(path):
                 snapshot[name] = os.path.getsize(path)
+    for name in CORE_FILES:
+        if os.path.exists(name):
+            snapshot[name] = os.path.getsize(name)
     return snapshot
 
 
@@ -274,6 +279,36 @@ def check_dataset_updates() -> None:
     if current != previous:
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(current, f)
+        reproduction_cycle()
+
+
+def _logs_snapshot() -> dict:
+    """Return a mapping of log file paths to modification times."""
+    snapshot = {}
+    for path in [LOG_FILE, HUMAN_LOG, DREAM_LOG]:
+        if os.path.exists(path):
+            snapshot[path] = os.path.getmtime(path)
+    return snapshot
+
+
+def check_log_updates() -> None:
+    """Trigger retraining when log files change."""
+    current = _logs_snapshot()
+    previous = {}
+    if os.path.exists(LOG_STATE_FILE):
+        with open(LOG_STATE_FILE, "r", encoding="utf-8") as f:
+            try:
+                previous = json.load(f)
+            except json.JSONDecodeError:
+                previous = {}
+    changed = [p for p, m in current.items() if previous.get(p) != m]
+    if changed:
+        with open(LOG_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(current, f)
+        with open(LOG_CHANGE_LOG, "a", encoding="utf-8") as log:
+            timestamp = datetime.utcnow().isoformat()
+            log.write(f"{timestamp} {','.join(changed)}\n")
+        reproduction_cycle()
 
 
 def get_data_files() -> list:
@@ -475,6 +510,7 @@ def chat_response(user_text: str, *, use_nanogpt: bool | None = None) -> str:
         use_nanogpt = settings.use_nanogpt
 
     check_utility_updates()
+    check_log_updates()
     allowed = _allowed_messages()
     if CHAT_SESSION_COUNT >= allowed:
         return "MESSAGE LIMIT REACHED"
@@ -502,6 +538,7 @@ def chat_response(user_text: str, *, use_nanogpt: bool | None = None) -> str:
 
 def run():
     check_utility_updates()
+    check_log_updates()
     text = load_data()
     model = train(text)
     comment = generate(model)
