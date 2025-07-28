@@ -4,6 +4,7 @@ import json
 import sqlite3
 import gzip
 import shutil
+import hashlib
 from datetime import datetime
 from typing import Dict
 
@@ -237,17 +238,26 @@ def adjust_response_style(reply: str) -> str:
     return reply
 
 # dataset helpers
+def _file_hash(path: str) -> str:
+    """Return the SHA-256 hash of ``path``."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def _dataset_snapshot() -> dict:
-    """Return a mapping of dataset file name to size."""
+    """Return a mapping of dataset file name to SHA-256 hash."""
     snapshot = {}
     if os.path.isdir(DATA_DIR):
         for name in os.listdir(DATA_DIR):
             path = os.path.join(DATA_DIR, name)
             if os.path.isfile(path):
-                snapshot[name] = os.path.getsize(path)
+                snapshot[name] = _file_hash(path)
     for name in CORE_FILES:
         if os.path.exists(name):
-            snapshot[name] = os.path.getsize(name)
+            snapshot[name] = _file_hash(name)
     return snapshot
 
 
