@@ -1,9 +1,12 @@
 import os
 import random
 import json
+import gzip
+import shutil
 from datetime import datetime
 
 from .evolution_safe import evolve_cycle
+from . import memory
 CORE_FILES = ["README.md", "Arianna-Method-v2.9.md"]
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 STATE_FILE = os.path.join("arianna_core", "dataset_state.json")
@@ -11,14 +14,21 @@ LOG_FILE = os.path.join("arianna_core", "log.txt")
 HUMAN_LOG = os.path.join("arianna_core", "humanbridge.log")
 MODEL_FILE = os.path.join("arianna_core", "model.txt")
 EVOLUTION_FILE = os.path.join("arianna_core", "evolution_steps.py")
+EVOLUTION_METRICS = os.path.join("arianna_core", "evolution_metrics.json")
 LOG_MAX_BYTES = 1_000_000  # 1 MB default size limit for rotation
 
 
 def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
-    """Rotate the given log file if it exceeds ``max_bytes``."""
+    """Rotate and compress ``path`` if it exceeds ``max_bytes``."""
     if os.path.exists(path) and os.path.getsize(path) > max_bytes:
         timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        os.rename(path, f"{path}.{timestamp}")
+        archive = f"{path}.{timestamp}.gz"
+        with open(path, "rb") as src, gzip.open(archive, "wb") as dst:
+            shutil.copyfileobj(src, dst)
+        os.remove(path)
+        idx = path + ".index"
+        with open(idx, "a", encoding="utf-8") as f:
+            f.write(f"{timestamp} {archive}\n")
 
 # dataset helpers
 def _dataset_snapshot() -> dict:
@@ -71,13 +81,19 @@ def load_data():
     return text
 
 
-def train(text):
+def train(text: str, n: int = 1):
+    """Train an n-gram model from ``text``."""
     model = {}
-    for a, b in zip(text, text[1:]):
-        bucket = model.setdefault(a, {})
-        bucket[b] = bucket.get(b, 0) + 1
+    if n < 1:
+        n = 1
+    for i in range(len(text) - n):
+        key = text[i : i + n]
+        nxt = text[i + n]
+        bucket = model.setdefault(key, {})
+        bucket[nxt] = bucket.get(nxt, 0) + 1
     with open(MODEL_FILE, "w", encoding="utf-8") as f:
         json.dump(model, f)
+    memory.update_patterns(model)
     return model
 
 
@@ -114,21 +130,22 @@ def load_model():
         return model
 
 
-def generate(model, length=80, seed=None):
+def generate(model, length: int = 80, seed: str | None = None, n: int = 1) -> str:
     if not model:
         return ""
-    ch = seed if seed in model else random.choice(list(model.keys()))
-    out = [ch]
-    for _ in range(length - 1):
-        freq = model.get(ch)
+    key = seed if seed in model else random.choice(list(model.keys()))
+    out = [key]
+    for _ in range(length - n):
+        freq = model.get(key)
         if not freq:
-            ch = random.choice(list(model.keys()))
+            key = random.choice(list(model.keys()))
         else:
             chars = list(freq.keys())
             weights = list(freq.values())
-            ch = random.choices(chars, weights=weights)[0]
-        out.append(ch)
-    return ''.join(out)
+            nxt = random.choices(chars, weights=weights)[0]
+            key = key[1:] + nxt if n > 1 else nxt
+        out.append(key[-1])
+    return "".join(out)
 
 
 def update_index(comment):
@@ -161,6 +178,17 @@ def evolve(entry: str) -> None:
             f.write("evolution_steps = []\n")
     with open(EVOLUTION_FILE, "a", encoding="utf-8") as f:
         f.write(f"evolution_steps.append({entry!r})\n")
+    category = entry.split(":", 1)[0] if ":" in entry else "misc"
+    metrics = {}
+    if os.path.exists(EVOLUTION_METRICS):
+        with open(EVOLUTION_METRICS, "r", encoding="utf-8") as m:
+            try:
+                metrics = json.load(m)
+            except json.JSONDecodeError:
+                metrics = {}
+    metrics[category] = metrics.get(category, 0) + 1
+    with open(EVOLUTION_METRICS, "w", encoding="utf-8") as m:
+        json.dump(metrics, m)
 
 
 def chat_response(user_text: str) -> str:
