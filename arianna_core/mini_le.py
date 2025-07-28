@@ -3,7 +3,9 @@ import random
 import json
 from datetime import datetime
 
-DATA_FILES = ["README.md", "Arianna-Method-v2.9.md"]
+CORE_FILES = ["README.md", "Arianna-Method-v2.9.md"]
+DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
+STATE_FILE = os.path.join("arianna_core", "dataset_state.json")
 LOG_FILE = os.path.join("arianna_core", "log.txt")
 HUMAN_LOG = os.path.join("arianna_core", "humanbridge.log")
 MODEL_FILE = os.path.join("arianna_core", "model.txt")
@@ -17,10 +19,48 @@ def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
         timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
         os.rename(path, f"{path}.{timestamp}")
 
+# dataset helpers
+def _dataset_snapshot() -> dict:
+    """Return a mapping of dataset file name to size."""
+    snapshot = {}
+    if os.path.isdir(DATA_DIR):
+        for name in os.listdir(DATA_DIR):
+            path = os.path.join(DATA_DIR, name)
+            if os.path.isfile(path):
+                snapshot[name] = os.path.getsize(path)
+    return snapshot
+
+
+def check_dataset_updates() -> None:
+    """Update ``STATE_FILE`` if the dataset contents changed."""
+    current = _dataset_snapshot()
+    previous = {}
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
+            try:
+                previous = json.load(f)
+            except json.JSONDecodeError:
+                previous = {}
+    if current != previous:
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(current, f)
+
+
+def get_data_files() -> list:
+    """Return the list of corpus files."""
+    files = [f for f in CORE_FILES if os.path.exists(f)]
+    if os.path.isdir(DATA_DIR):
+        for name in sorted(os.listdir(DATA_DIR)):
+            path = os.path.join(DATA_DIR, name)
+            if os.path.isfile(path):
+                files.append(path)
+    return files
+
 # simple character-level Markov model
 def load_data():
+    check_dataset_updates()
     text = ""
-    for f in DATA_FILES:
+    for f in get_data_files():
         with open(f, "r", encoding="utf-8") as fi:
             text += fi.read() + "\n"
     for path in [LOG_FILE, HUMAN_LOG]:
