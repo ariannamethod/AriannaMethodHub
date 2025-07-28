@@ -50,6 +50,24 @@ def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES) -> None:
         os.remove(path)
         with open(path + ".index", "a", encoding="utf-8") as f:
             f.write(f"{archive}\n")
+        prune_archives(path)
+
+
+def prune_archives(path: str, keep: int = 5) -> None:
+    """Remove old log archives keeping only the most recent ``keep``."""
+    index = path + ".index"
+    if not os.path.exists(index):
+        return
+    with open(index, "r", encoding="utf-8") as f:
+        archives = [line.strip() for line in f if line.strip()]
+    if len(archives) <= keep:
+        return
+    to_remove = archives[:-keep]
+    for gz in to_remove:
+        if os.path.exists(gz):
+            os.remove(gz)
+    with open(index, "w", encoding="utf-8") as f:
+        f.write("\n".join(archives[-keep:]) + "\n")
 
 
 def search_logs(query: str, path: str = HUMAN_LOG) -> list:
