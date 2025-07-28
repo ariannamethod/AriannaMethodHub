@@ -212,7 +212,7 @@ def test_check_dataset_updates_triggers_reproduction(tmp_path, monkeypatch):
     mini_le.check_dataset_updates()
     called = []
     monkeypatch.setattr(mini_le, "reproduction_cycle", lambda: called.append(True))
-    file1.write_text("aa", encoding="utf-8")
+    file1.write_text("b", encoding="utf-8")
     mini_le.check_dataset_updates()
     assert called
 
