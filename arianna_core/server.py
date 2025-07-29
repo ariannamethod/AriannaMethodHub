@@ -1,8 +1,13 @@
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 import os
+import sys
 
-from . import mini_le
+if __package__ is None:
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    import mini_le
+else:
+    from . import mini_le
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 
