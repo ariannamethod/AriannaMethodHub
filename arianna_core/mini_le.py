@@ -1,10 +1,37 @@
 import os
 import json
 import random
+import gzip
+from datetime import datetime
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 MODEL_FILE = os.path.join(os.path.dirname(__file__), "model.txt")
+LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
+HUMAN_LOG = os.path.join(os.path.dirname(__file__), "humanbridge.log")
+LOG_MAX_BYTES = 1_000_000
 NGRAM_LEVEL = 2
+
+
+def rotate_log(path: str, max_bytes: int, keep: int = 3) -> None:
+    """Archive ``path`` with a timestamp if it exceeds ``max_bytes``."""
+    if not os.path.exists(path) or os.path.getsize(path) < max_bytes:
+        return
+    ts = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    archive = f"{path}.{ts}.gz"
+    with open(path, "rb") as src, gzip.open(archive, "wb") as dst:
+        dst.write(src.read())
+    os.remove(path)
+    base = os.path.basename(path)
+    directory = os.path.dirname(path)
+    archives = sorted(
+        [f for f in os.listdir(directory) if f.startswith(base + ".")],
+        reverse=True,
+    )
+    for old in archives[keep:]:
+        try:
+            os.remove(os.path.join(directory, old))
+        except FileNotFoundError:
+            pass
 
 
 def load_data() -> str:
