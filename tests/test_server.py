@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def make_server(monkeypatch, chat_func=lambda m: "reply:" + m):
     monkeypatch.setattr(server.mini_le, "chat_response", chat_func)
-    handler = partial(server.Handler, directory=str(ROOT))
+    handler = partial(server.Handler, directory=str(server.ROOT))
     srv = HTTPServer(("localhost", 0), handler)
     return srv
 
@@ -67,6 +67,28 @@ def test_server_runs_as_script(tmp_path):
         conn.close()
         assert resp.status == 200
         assert body
+    finally:
+        proc.terminate()
+        proc.wait()
+
+
+def test_server_root_from_temp_dir(tmp_path):
+    port = 8766
+    script = ROOT / "arianna_core" / "server.py"
+    proc = subprocess.Popen([
+        sys.executable,
+        str(script),
+        str(port),
+    ], cwd=str(tmp_path))
+    try:
+        time.sleep(0.3)
+        conn = http.client.HTTPConnection("localhost", port)
+        conn.request("GET", "/")
+        resp = conn.getresponse()
+        body = resp.read().decode()
+        conn.close()
+        assert resp.status == 200
+        assert "<!DOCTYPE html>" in body
     finally:
         proc.terminate()
         proc.wait()
