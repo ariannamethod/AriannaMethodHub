@@ -38,6 +38,9 @@ class Handler(SimpleHTTPRequestHandler):
             msg = query.get("msg", [""])[0]
             reply = mini_le.chat_response(msg)
             self.send_response(200)
+            # Set CORS headers before sending the response body
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST")
             self._set_cors_headers()
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
