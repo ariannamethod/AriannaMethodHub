@@ -1,9 +1,10 @@
+import os
 import importlib
 from typing import Optional
 
 _MODEL = None
 
-MODEL_PATH = "arianna_core/nanogpt.pt"
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "nanogpt.pt")
 
 
 def load_model(path: str = MODEL_PATH):
