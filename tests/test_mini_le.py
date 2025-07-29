@@ -58,3 +58,19 @@ def test_metabolize_and_filter(tmp_path, monkeypatch):
     mini_le.blocked_messages = 0
     assert mini_le.immune_filter("badword") == ""
     assert mini_le.blocked_messages == 1
+
+
+def test_rotate_log(tmp_path, monkeypatch):
+    log = tmp_path / "log.txt"
+    log.write_bytes(b"x" * 10)
+    mini_le.rotate_log(str(log), max_bytes=1, keep=2)
+    archives = list(tmp_path.glob("log.txt.*.gz"))
+    assert not log.exists()
+    assert len(archives) == 1
+    # rotate twice more to trigger pruning
+    for i in range(2):
+        new_log = tmp_path / "log.txt"
+        new_log.write_bytes(b"y" * 10)
+        mini_le.rotate_log(str(new_log), max_bytes=1, keep=2)
+    archives = list(tmp_path.glob("log.txt.*.gz"))
+    assert len(archives) <= 2

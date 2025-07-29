@@ -37,3 +37,11 @@ def test_query_no_recompute(tmp_path, monkeypatch):
     search.query("x")
     search.query("y")
     assert count["n"] == len(snippets) + 2
+
+
+def test_tokenize_and_dot():
+    tokens = local_rag._tokenize("Hello, HELLO world!")
+    assert tokens == ["hello", "hello", "world"]
+    v1 = local_rag._vectorize(tokens)
+    v2 = local_rag._vectorize(["hello", "test"])
+    assert local_rag._dot(v1, v2) == 2
