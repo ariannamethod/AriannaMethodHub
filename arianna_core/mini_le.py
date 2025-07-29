@@ -14,8 +14,11 @@ NGRAM_LEVEL = 2
 last_entropy: float = 0.0
 
 
-def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES, keep: int = LOG_KEEP) -> None:
-    """Archive ``path`` when it exceeds ``max_bytes`` and prune old archives."""
+def rotate_log(
+    path: str, max_bytes: int = LOG_MAX_BYTES, keep: int = LOG_KEEP
+) -> None:
+    """Archive ``path`` when it exceeds ``max_bytes`` and prune old
+    archives."""
     if not os.path.exists(path) or os.path.getsize(path) < max_bytes:
         return
     ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
@@ -27,7 +30,11 @@ def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES, keep: int = LOG_KEEP) 
     base = os.path.basename(path)
     dir_path = os.path.dirname(path)
     archives = sorted(
-        [f for f in os.listdir(dir_path) if f.startswith(base) and f.endswith(".gz")],
+        [
+            f
+            for f in os.listdir(dir_path)
+            if f.startswith(base) and f.endswith(".gz")
+        ],
         reverse=True,
     )
     for old in archives[keep:]:
@@ -50,7 +57,7 @@ def train(text: str, n: int = NGRAM_LEVEL) -> dict:
     """Train an n-gram model from ``text`` and write it to ``MODEL_FILE``."""
     model: dict[str, dict[str, int]] = {}
     for i in range(len(text) - n + 1):
-        ctx = text[i : i + n - 1]
+        ctx = text[i:i + n - 1]
         ch = text[i + n - 1]
         freq = model.setdefault(ctx, {})
         freq[ch] = freq.get(ch, 0) + 1
@@ -76,7 +83,7 @@ def generate(model: dict, length: int = 80, seed: str | None = None) -> str:
     rng = random
     if not m:
         return ""
-    context = seed[-(n - 1) :] if seed else rng.choice(list(m.keys()))
+    context = seed[-(n - 1):] if seed else rng.choice(list(m.keys()))
     output = context
     for _ in range(length - len(context)):
         freq = m.get(context)
@@ -90,7 +97,7 @@ def generate(model: dict, length: int = 80, seed: str | None = None) -> str:
         weights = list(freq.values())
         ch = rng.choices(chars, weights=weights)[0]
         output += ch
-        context = output[-(n - 1) :]
+        context = output[-(n - 1):]
     return output[:length]
 
 

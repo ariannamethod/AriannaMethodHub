@@ -39,4 +39,3 @@ def generate(prompt: str, max_new_tokens: int = 80) -> Optional[str]:
         return gen(prompt, max_new_tokens=max_new_tokens)
     except Exception:
         return None
-

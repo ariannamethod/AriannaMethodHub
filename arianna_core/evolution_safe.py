@@ -45,8 +45,11 @@ def test_mutation(mutated_path: str) -> bool:
 
 
 def apply_mutation(mutated_path: str) -> None:
-    """Replace the original file with ``mutated_path`` and refresh the snapshot."""
-    original = mutated_path[:-4] if mutated_path.endswith(".mut") else mutated_path
+    """Replace the original file with ``mutated_path`` and refresh the
+    snapshot."""
+    original = (
+        mutated_path[:-4] if mutated_path.endswith(".mut") else mutated_path
+    )
     shutil.move(mutated_path, original)
     snapshot_safe()
 

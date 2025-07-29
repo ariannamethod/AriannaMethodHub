@@ -59,4 +59,3 @@ def load_snippets(paths: List[str]) -> List[str]:
             if para:
                 snippets.append(para)
     return snippets
-
