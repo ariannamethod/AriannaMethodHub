@@ -2,7 +2,7 @@ import os
 import json
 import random
 import gzip
-from datetime import datetime
+from datetime import datetime, UTC
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 MODEL_FILE = os.path.join(os.path.dirname(__file__), "model.txt")
@@ -16,7 +16,7 @@ def rotate_log(path: str, max_bytes: int, keep: int = 3) -> None:
     """Archive ``path`` with a timestamp if it exceeds ``max_bytes``."""
     if not os.path.exists(path) or os.path.getsize(path) < max_bytes:
         return
-    ts = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    ts = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     archive = f"{path}.{ts}.gz"
     with open(path, "rb") as src, gzip.open(archive, "wb") as dst:
         dst.write(src.read())

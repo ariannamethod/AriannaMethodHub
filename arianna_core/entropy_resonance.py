@@ -1,6 +1,6 @@
 import json
 import math
-from datetime import datetime
+from datetime import datetime, UTC
 import logging
 
 from . import mini_le
@@ -48,7 +48,7 @@ def entropy_resonance_mutate(model: dict) -> tuple[dict, float, bool]:
     rotate_log(LOG_FILE, LOG_MAX_BYTES)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(
-            f"{datetime.utcnow().isoformat()} entropy={ent:.2f} changed={changed}\n"
+            f"{datetime.now(UTC).isoformat()} entropy={ent:.2f} changed={changed}\n"
         )
     return mutated, ent, changed
 
