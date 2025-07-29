@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+import json
 
 from arianna_core import server
 
@@ -49,6 +50,24 @@ def test_chat_endpoint(monkeypatch):
     srv.server_close()
     assert status == 200
     assert "reply:hi" in body
+    assert headers.get("Access-Control-Allow-Origin") == "*"
+
+
+def test_chat_post_endpoint(monkeypatch):
+    srv = make_server(monkeypatch)
+    thread = threading.Thread(target=srv.handle_request)
+    thread.start()
+    port = srv.server_address[1]
+    conn = http.client.HTTPConnection("localhost", port)
+    conn.request("POST", "/chat", body="hello", headers={"Content-Type": "text/plain"})
+    resp = conn.getresponse()
+    body = resp.read().decode()
+    headers = dict(resp.getheaders())
+    conn.close()
+    thread.join()
+    srv.server_close()
+    assert resp.status == 200
+    assert "reply:hello" in body
     assert headers.get("Access-Control-Allow-Origin") == "*"
 
 
@@ -125,3 +144,16 @@ def test_missing_file(monkeypatch):
     thread.join()
     srv.server_close()
     assert status == 404
+
+
+def test_health_endpoint(monkeypatch):
+    srv = make_server(monkeypatch)
+    thread = threading.Thread(target=srv.handle_request)
+    thread.start()
+    status, body, headers = get(srv, "/health")
+    thread.join()
+    srv.server_close()
+    assert status == 200
+    assert headers.get("Content-Type", "").startswith("application/json")
+    data = json.loads(body)
+    assert data["status"] == "alive"

@@ -107,7 +107,11 @@ document.getElementById('input-area').addEventListener('submit', e => {
     if (!text || !networkUrl) return;
     addMsg('> ' + text, 'sent');
     msgInput.value = '';
-    fetch(networkUrl + '/chat?msg=' + encodeURIComponent(text))
+    fetch(networkUrl + '/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: text,
+    })
         .then(r => r.text())
         .then(t => addMsg(t, 'received'))
         .catch(err => addMsg('Error: ' + err.message, 'received'));
