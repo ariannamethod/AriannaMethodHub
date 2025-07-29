@@ -4,11 +4,17 @@ from functools import partial
 import os
 import sys
 
+from typing import TYPE_CHECKING
+
 if __package__ is None:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    import mini_le
+    import importlib
+    mini_le = importlib.import_module("arianna_core.mini_le")  # type: ignore
 else:
     from . import mini_le
+
+if TYPE_CHECKING:
+    from . import mini_le as _mini_le_mod  # noqa: F401
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 

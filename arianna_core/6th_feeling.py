@@ -4,12 +4,13 @@ import os
 import importlib
 from datetime import datetime, timedelta
 import logging
+from typing import Any
 from arianna_core.pain import calculate_entropy, calculate_affinity, trigger_pain
 from .config import is_enabled
 
-_mini_le = None
-MODEL_FILE = None
-LOG_FILE = None
+_mini_le: Any = None
+MODEL_FILE: str = ""
+LOG_FILE: str = ""
 
 
 def _load_refs():
@@ -18,6 +19,7 @@ def _load_refs():
         _mini_le = importlib.import_module("arianna_core.mini_le")
         MODEL_FILE = _mini_le.MODEL_FILE
         LOG_FILE = _mini_le.LOG_FILE
+    assert _mini_le is not None
 
 
 def lorenz_distort(x: float, sigma: float = 10, rho: float = 28, beta: float = 8/3, dt: float = 0.01) -> float:
