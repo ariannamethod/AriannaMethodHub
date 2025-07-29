@@ -30,6 +30,16 @@ def get(srv, path):
     return resp.status, body, headers
 
 
+def head(srv, path):
+    port = srv.server_address[1]
+    conn = http.client.HTTPConnection("localhost", port)
+    conn.request("HEAD", path)
+    resp = conn.getresponse()
+    headers = dict(resp.getheaders())
+    conn.close()
+    return resp.status, headers
+
+
 def test_chat_endpoint(monkeypatch):
     srv = make_server(monkeypatch)
     thread = threading.Thread(target=srv.handle_request)
@@ -94,3 +104,24 @@ def test_server_root_from_temp_dir(tmp_path):
     finally:
         proc.terminate()
         proc.wait()
+
+
+def test_head_root(monkeypatch):
+    srv = make_server(monkeypatch)
+    thread = threading.Thread(target=srv.handle_request)
+    thread.start()
+    status, headers = head(srv, "/")
+    thread.join()
+    srv.server_close()
+    assert status == 200
+    assert "text/html" in headers.get("Content-type", "")
+
+
+def test_missing_file(monkeypatch):
+    srv = make_server(monkeypatch)
+    thread = threading.Thread(target=srv.handle_request)
+    thread.start()
+    status, body, _ = get(srv, "/no_such_file.txt")
+    thread.join()
+    srv.server_close()
+    assert status == 404
