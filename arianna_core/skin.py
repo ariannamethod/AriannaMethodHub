@@ -47,7 +47,8 @@ def evolve_skin(index_path: str = INDEX_PATH) -> str:
     css = (
         f'body {{ background: {bg_color}; color: #00FF00; {flash} }} '
         '@keyframes chaos { 0% { filter: hue-rotate(0deg); } '
-        '50% { filter: hue-rotate(180deg); } 100% { filter: hue-rotate(360deg); } }'
+        '50% { filter: hue-rotate(180deg); } '
+        '100% { filter: hue-rotate(360deg); } }'
     )
 
     with open(index_path, 'r', encoding='utf-8') as f:
@@ -66,8 +67,8 @@ def evolve_skin(index_path: str = INDEX_PATH) -> str:
 
     with open(LOG_FILE, 'a', encoding='utf-8') as f:
         f.write(
-            f"{datetime.utcnow().isoformat()} Skin evolved: entropy={ent:.2f}, "
-            f"aff={aff:.2f}, color={bg_color}\n"
+            f"{datetime.utcnow().isoformat()} Skin evolved: "
+            f"entropy={ent:.2f}, aff={aff:.2f}, color={bg_color}\n"
         )
     return bg_color
 

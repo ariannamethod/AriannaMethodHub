@@ -5,7 +5,11 @@ import importlib
 from datetime import datetime, timedelta
 import logging
 from typing import Any
-from arianna_core.pain import calculate_entropy, calculate_affinity, trigger_pain
+from arianna_core.pain import (
+    calculate_entropy,
+    calculate_affinity,
+    trigger_pain,
+)
 from .config import is_enabled
 
 _mini_le: Any = None
@@ -22,7 +26,13 @@ def _load_refs():
     assert _mini_le is not None
 
 
-def lorenz_distort(x: float, sigma: float = 10, rho: float = 28, beta: float = 8/3, dt: float = 0.01) -> float:
+def lorenz_distort(
+    x: float,
+    sigma: float = 10,
+    rho: float = 28,
+    beta: float = 8 / 3,
+    dt: float = 0.01,
+) -> float:
     y, _ = random.random(), random.random()
     dx = sigma * (y - x) * dt
     return x + dx
@@ -39,11 +49,17 @@ def predict_next(model: dict | None = None) -> str:
     if not model:
         return ""
     m = model["model"] if "model" in model else model
-    perturbed = {k: {ch: max(1, int(v * lorenz_distort(v))) for ch, v in freq.items()} for k, freq in m.items()}
+    perturbed = {
+        k: {ch: max(1, int(v * lorenz_distort(v))) for ch, v in freq.items()}
+        for k, freq in m.items()
+    }
     struct = {"n": model.get("n", 2), "model": perturbed}
     pred = _mini_le.generate(struct, length=100)
     with open(_mini_le.LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.now().isoformat()} Prediction: {pred[:50]}... ent={calculate_entropy(pred):.2f}\n")
+        f.write(
+            f"{datetime.now().isoformat()} Prediction: {pred[:50]}... ent="
+            f"{calculate_entropy(pred):.2f}\n"
+        )
     return pred
 
 
@@ -88,7 +104,9 @@ def check_prediction(actual_output: str) -> None:
     else:
         trigger_pain(actual_output)
         with open(_mini_le.LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(f"Prediction mismatch: delta {delta:.2f}, pain triggered.\n")
+            f.write(
+                f"Prediction mismatch: delta {delta:.2f}, pain triggered.\n"
+            )
 
 
 if __name__ == "__main__":

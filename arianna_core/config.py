@@ -3,6 +3,7 @@ import os
 import pathlib
 import tomllib
 
+
 @dataclass
 class Settings:
     """Project configuration settings."""
@@ -13,7 +14,9 @@ class Settings:
 
     def __post_init__(self) -> None:
         # load from pyproject if available
-        project = pathlib.Path(__file__).resolve().parents[1] / "pyproject.toml"
+        project = (
+            pathlib.Path(__file__).resolve().parents[1] / "pyproject.toml"
+        )
         if project.exists():
             with project.open("rb") as f:
                 data = tomllib.load(f)
@@ -28,7 +31,10 @@ class Settings:
                 .get("use_nanogpt", self.use_nanogpt)
             )
             self.n_gram_level = int(
-                os.getenv("ARIANNA_NGRAM_LEVEL", os.getenv("ARIANNA_NGRAM_SIZE", n))
+                os.getenv(
+                    "ARIANNA_NGRAM_LEVEL",
+                    os.getenv("ARIANNA_NGRAM_SIZE", n),
+                )
             )
             flag = os.getenv("ARIANNA_USE_NANOGPT", str(use_ngpt))
             self.use_nanogpt = flag.lower() in {"1", "true", "yes"}
@@ -42,12 +48,18 @@ class Settings:
             )
         else:
             self.n_gram_level = int(
-                os.getenv("ARIANNA_NGRAM_LEVEL", os.getenv("ARIANNA_NGRAM_SIZE", self.n_gram_level))
+                os.getenv(
+                    "ARIANNA_NGRAM_LEVEL",
+                    os.getenv("ARIANNA_NGRAM_SIZE", self.n_gram_level),
+                )
             )
             flag = os.getenv("ARIANNA_USE_NANOGPT", str(self.use_nanogpt))
             self.use_nanogpt = flag.lower() in {"1", "true", "yes"}
             self.reproduction_interval = int(
-                os.getenv("ARIANNA_REPRO_INTERVAL", str(self.reproduction_interval))
+                os.getenv(
+                    "ARIANNA_REPRO_INTERVAL",
+                    str(self.reproduction_interval),
+                )
             )
 
 
@@ -67,4 +79,3 @@ FEATURES = {
 def is_enabled(feature_name: str) -> bool:
     """Return ``True`` if ``feature_name`` is enabled."""
     return FEATURES.get(feature_name, False)
-

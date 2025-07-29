@@ -19,7 +19,6 @@ def test_query_no_match(tmp_path):
     assert search.query("zzz") == []
 
 
-
 def test_query_no_recompute(tmp_path, monkeypatch):
     doc = tmp_path / "doc.txt"
     doc.write_text("x y z", encoding="utf-8")
@@ -38,4 +37,3 @@ def test_query_no_recompute(tmp_path, monkeypatch):
     search.query("x")
     search.query("y")
     assert count["n"] == len(snippets) + 2
-

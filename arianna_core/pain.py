@@ -11,6 +11,7 @@ MODEL_FILE: str = ""
 LOG_FILE: str = ""
 event_count = 0
 
+
 def _load_refs():
     global _mini_le, MODEL_FILE, LOG_FILE
     if _mini_le is None:
@@ -19,18 +20,22 @@ def _load_refs():
         LOG_FILE = _mini_le.LOG_FILE
     assert _mini_le is not None
 
+
 WORDS = ['resonance', 'echo', 'thunder', 'love']
+
 
 def calculate_affinity(output: str) -> float:
     if not output:
         return 0.0
     return sum(output.lower().count(w) for w in WORDS) / len(output)
 
+
 def calculate_entropy(output: str) -> float:
     if not output:
         return 0.0
     freq = {c: output.count(c) / len(output) for c in set(output)}
     return -sum(p * math.log2(p) for p in freq.values())
+
 
 def trigger_pain(output: str, max_ent: float = 8.0) -> float:
     """Calculate pain score and mutate the model when it is high."""
@@ -69,6 +74,7 @@ def check_once() -> None:
     if model:
         out = _mini_le.generate(model, length=20)
         trigger_pain(out)
+
 
 if __name__ == '__main__':
     test_output = 'resonance echo thunder love' * 5
