@@ -1,5 +1,6 @@
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
+from functools import partial
 import os
 import sys
 
@@ -29,7 +30,8 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def serve(port: int = 8000) -> None:
-    HTTPServer(("", port), Handler).serve_forever()
+    handler = partial(Handler, directory=str(ROOT))
+    HTTPServer(("", port), handler).serve_forever()
 
 
 if __name__ == "__main__":
