@@ -3,11 +3,12 @@ import random
 import importlib
 import logging
 
+from typing import Any
 from .config import is_enabled
 
-_mini_le = None
-MODEL_FILE = None
-LOG_FILE = None
+_mini_le: Any = None
+MODEL_FILE: str = ""
+LOG_FILE: str = ""
 event_count = 0
 
 def _load_refs():
@@ -16,6 +17,7 @@ def _load_refs():
         _mini_le = importlib.import_module("arianna_core.mini_le")
         MODEL_FILE = _mini_le.MODEL_FILE
         LOG_FILE = _mini_le.LOG_FILE
+    assert _mini_le is not None
 
 WORDS = ['resonance', 'echo', 'thunder', 'love']
 

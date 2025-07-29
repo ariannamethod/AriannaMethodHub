@@ -11,6 +11,7 @@ HUMAN_LOG = os.path.join(os.path.dirname(__file__), "humanbridge.log")
 LOG_MAX_BYTES = 1_000_000
 LOG_KEEP = 3
 NGRAM_LEVEL = 2
+last_entropy: float = 0.0
 
 
 def rotate_log(path: str, max_bytes: int = LOG_MAX_BYTES, keep: int = LOG_KEEP) -> None:

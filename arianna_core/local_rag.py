@@ -3,7 +3,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     import re
 from functools import lru_cache
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 _TOKEN_RE = re.compile(r"\b\w+\b")
 
@@ -19,8 +19,8 @@ def _vectorize_cached(text: str) -> dict:
     return _vectorize(_tokenize(text))
 
 
-def _vectorize(tokens: List[str]) -> dict:
-    vec = {}
+def _vectorize(tokens: List[str]) -> Dict[str, int]:
+    vec: Dict[str, int] = {}
     for t in tokens:
         vec[t] = vec.get(t, 0) + 1
     return vec
