@@ -76,6 +76,9 @@
 
 <script>
 let networkUrl = window.location.origin;
+if (!networkUrl || networkUrl === 'null' || window.location.protocol === 'file:') {
+    networkUrl = 'http://localhost:8000';
+}
 document.getElementById('networkUrl').value = networkUrl;
 document.getElementById('messageInput').disabled = false;
 document.getElementById('sendBtn').disabled = false;
