@@ -75,7 +75,7 @@
 </form>
 
 <script>
-let networkUrl = window.location.origin;
+let networkUrl = window.location.origin.replace(/\/+$/, '');
 document.getElementById('networkUrl').value = networkUrl;
 document.getElementById('messageInput').disabled = false;
 document.getElementById('sendBtn').disabled = false;
@@ -92,7 +92,7 @@ function addMsg(text, cls) {
 document.getElementById('connectBtn').onclick = () => {
     const url = document.getElementById('networkUrl').value.trim();
     if (!url) return;
-    networkUrl = url;
+    networkUrl = url.replace(/\/+$/, '');
     document.getElementById('messageInput').disabled = false;
     document.getElementById('sendBtn').disabled = false;
 };

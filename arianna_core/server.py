@@ -27,9 +27,12 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
+    def end_headers(self) -> None:
+        self._set_cors_headers()
+        super().end_headers()
+
     def do_OPTIONS(self) -> None:  # pragma: no cover - simple headers only
         self.send_response(200)
-        self._set_cors_headers()
         self.end_headers()
 
     def do_GET(self):
@@ -38,7 +41,6 @@ class Handler(SimpleHTTPRequestHandler):
             msg = query.get("msg", [""])[0]
             reply = mini_le.chat_response(msg)
             self.send_response(200)
-            self._set_cors_headers()
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
             self.wfile.write(reply.encode("utf-8"))
