@@ -25,26 +25,28 @@ def get(srv, path):
     conn.request("GET", path)
     resp = conn.getresponse()
     body = resp.read().decode()
+    headers = dict(resp.getheaders())
     conn.close()
-    return resp.status, body
+    return resp.status, body, headers
 
 
 def test_chat_endpoint(monkeypatch):
     srv = make_server(monkeypatch)
     thread = threading.Thread(target=srv.handle_request)
     thread.start()
-    status, body = get(srv, "/chat?msg=hi")
+    status, body, headers = get(srv, "/chat?msg=hi")
     thread.join()
     srv.server_close()
     assert status == 200
     assert "reply:hi" in body
+    assert headers.get("Access-Control-Allow-Origin") == "*"
 
 
 def test_root_serves_index(monkeypatch):
     srv = make_server(monkeypatch)
     thread = threading.Thread(target=srv.handle_request)
     thread.start()
-    status, body = get(srv, "/")
+    status, body, _ = get(srv, "/")
     thread.join()
     srv.server_close()
     assert status == 200

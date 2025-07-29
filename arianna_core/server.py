@@ -20,12 +20,25 @@ ROOT = os.path.join(os.path.dirname(__file__), "..")
 
 
 class Handler(SimpleHTTPRequestHandler):
+    """Serve static files and a simple chat endpoint with CORS."""
+
+    def _set_cors_headers(self) -> None:
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def do_OPTIONS(self) -> None:  # pragma: no cover - simple headers only
+        self.send_response(200)
+        self._set_cors_headers()
+        self.end_headers()
+
     def do_GET(self):
         if self.path.startswith("/chat"):
             query = parse_qs(urlparse(self.path).query)
             msg = query.get("msg", [""])[0]
             reply = mini_le.chat_response(msg)
             self.send_response(200)
+            self._set_cors_headers()
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
             self.wfile.write(reply.encode("utf-8"))
