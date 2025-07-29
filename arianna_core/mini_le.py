@@ -100,3 +100,17 @@ def chat_response(message: str) -> str:
     if model is None:
         model = train(load_data(), n=NGRAM_LEVEL)
     return generate(model, length=60, seed=message)
+
+
+def reproduction_cycle(extra_logs: str | None = None) -> dict:
+    """Retrain the model from datasets and logs and return the new model."""
+    base = load_data()
+    logs = extra_logs
+    if logs is None:
+        logs = ""
+        for path in [LOG_FILE, HUMAN_LOG]:
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    logs += f.read() + "\n"
+    model = train(base + logs, n=NGRAM_LEVEL)
+    return model

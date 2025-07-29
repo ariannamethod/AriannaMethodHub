@@ -15,15 +15,13 @@ def load_logs():
 
 
 def main(chaos: bool = False, entropy: bool = False):
-    base = mini_le.load_data()
     logs = load_logs()
     if chaos:
         lines = logs.splitlines()
         random.shuffle(lines)
         logs = "\n".join(lines)
-    model = mini_le.train(base + logs)
+    model = mini_le.reproduction_cycle(logs)
     if entropy:
-        model = mini_le.reproduction_cycle()
         model, ent, changed = entropy_resonance.entropy_resonance_mutate(model)
         if changed:
             with open(mini_le.MODEL_FILE, "w", encoding="utf-8") as f:
