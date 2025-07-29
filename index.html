@@ -1,34 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Mini Chat</title>
+    <meta charset="UTF-8">
+    <title>Simple Chat</title>
     <style>
-        body { margin: 0; background:#111; color:#eee; font-family: sans-serif; }
-        #chat { padding:1em; height:90vh; overflow-y:auto; }
-        #msg { width:100%; box-sizing:border-box; padding:.5em; border:none; background:#222; color:#eee; }
-        .user { color:#0f0; }
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            padding: 0.5rem;
+            background: #2c3e50;
+            color: #fff;
+        }
+
+        #settings {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: #f0f0f0;
+        }
+
+        #chat {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .msg {
+            margin: 0.25rem 0;
+        }
+
+        .sent {
+            text-align: right;
+            color: #007bff;
+        }
+
+        .received {
+            text-align: left;
+            color: #333;
+        }
+
+        #input-area {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: #eee;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 0.5rem;
+        }
     </style>
 </head>
 <body>
-    <div id="chat"></div>
-    <input id="msg" autocomplete="off" placeholder="Type message..." />
-    <script>
+<header>Simple Chat</header>
+
+<div id="settings">
+    <input id="networkUrl" placeholder="http://localhost:8000" style="flex:1">
+    <button id="connectBtn">Connect</button>
+</div>
+
+<div id="chat"></div>
+
+<form id="input-area">
+    <input id="messageInput" autocomplete="off" placeholder="Type message..." disabled>
+    <button type="submit" id="sendBtn" disabled>Send</button>
+</form>
+
+<script>
+let networkUrl = '';
+
+function addMsg(text, cls) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    div.className = 'msg ' + cls;
     const chat = document.getElementById('chat');
-    const msg = document.getElementById('msg');
-    msg.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-            const text = msg.value.trim();
-            if (!text) return;
-            chat.innerHTML += `<div class="user">&gt; ${text}</div>`;
-            fetch('/chat?msg=' + encodeURIComponent(text))
-                .then(r => r.text())
-                .then(t => {
-                    chat.innerHTML += `<div>${t}</div>`;
-                    chat.scrollTop = chat.scrollHeight;
-                });
-            msg.value = '';
-        }
-    });
-    </script>
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+document.getElementById('connectBtn').onclick = () => {
+    const url = document.getElementById('networkUrl').value.trim();
+    if (!url) return;
+    networkUrl = url;
+    document.getElementById('messageInput').disabled = false;
+    document.getElementById('sendBtn').disabled = false;
+};
+
+document.getElementById('input-area').addEventListener('submit', e => {
+    e.preventDefault();
+    const msgInput = document.getElementById('messageInput');
+    const text = msgInput.value.trim();
+    if (!text || !networkUrl) return;
+    addMsg('> ' + text, 'sent');
+    msgInput.value = '';
+    fetch(networkUrl + '/chat?msg=' + encodeURIComponent(text))
+        .then(r => r.text())
+        .then(t => addMsg(t, 'received'))
+        .catch(err => addMsg('Error: ' + err.message, 'received'));
+});
+</script>
 </body>
 </html>
