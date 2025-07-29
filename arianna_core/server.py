@@ -20,7 +20,13 @@ ROOT = os.path.join(os.path.dirname(__file__), "..")
 
 
 class Handler(SimpleHTTPRequestHandler):
-    def do_GET(self):
+    def end_headers(self) -> None:
+        # Allow cross-origin requests so the HTML page can talk to the server
+        # even when served from a different port or domain.
+        self.send_header("Access-Control-Allow-Origin", "*")
+        super().end_headers()
+
+    def do_GET(self) -> None:
         if self.path.startswith("/chat"):
             query = parse_qs(urlparse(self.path).query)
             msg = query.get("msg", [""])[0]
