@@ -1,6 +1,7 @@
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 from functools import partial
+import json
 import os
 import sys
 
@@ -23,8 +24,9 @@ class Handler(SimpleHTTPRequestHandler):
     """Serve static files and a simple chat endpoint with CORS."""
 
     def _set_cors_headers(self) -> None:
+        """Send standard CORS headers."""
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
     def do_OPTIONS(self) -> None:  # pragma: no cover - simple headers only
@@ -33,22 +35,46 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        """Handle GET requests for chat, health and static files."""
         if self.path.startswith("/chat"):
             query = parse_qs(urlparse(self.path).query)
             msg = query.get("msg", [""])[0]
             reply = mini_le.chat_response(msg)
             self.send_response(200)
-            # Set CORS headers before sending the response body
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, POST")
+            self._set_cors_headers()
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(reply.encode("utf-8"))
+        elif self.path == "/health":
+            self.send_response(200)
+            self._set_cors_headers()
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            data = {
+                "status": "alive",
+                "entropy": getattr(mini_le, "last_entropy", 0.0),
+            }
+            self.wfile.write(json.dumps(data).encode("utf-8"))
+        else:
+            if self.path == "/":
+                self.path = "/index.html"
+            super().do_GET()
+
+    def do_POST(self) -> None:
+        """Handle chat POST requests."""
+        if self.path.startswith("/chat"):
+            length = int(self.headers.get("Content-Length", "0"))
+            body = self.rfile.read(length).decode("utf-8") if length > 0 else ""
+            reply = mini_le.chat_response(body)
+            self.send_response(200)
             self._set_cors_headers()
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
             self.wfile.write(reply.encode("utf-8"))
         else:
-            if self.path == "/":
-                self.path = "/index.html"
-            super().do_GET()
+            self.send_response(404)
+            self._set_cors_headers()
+            self.end_headers()
 
 
 def serve(port: int = 8000) -> None:
