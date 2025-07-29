@@ -1,12 +1,13 @@
 import json
 import math
+import os
 from datetime import datetime
 import logging
 
 from . import mini_le
 from .config import is_enabled
 
-LOG_FILE = "arianna_core/entropy.log"
+LOG_FILE = os.path.join(os.path.dirname(__file__), "entropy.log")
 
 
 def calculate_entropy(text: str) -> float:

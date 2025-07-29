@@ -1,11 +1,12 @@
+import os
 import math
 from datetime import datetime
 import logging
 from .mini_le import load_model, generate
 from .config import is_enabled
 
-INDEX_PATH = 'index.html'
-LOG_FILE = 'arianna_core/log.txt'
+INDEX_PATH = os.path.join(os.path.dirname(__file__), "..", "index.html")
+LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 
 WORDS = ['resonance', 'echo', 'thunder', 'love']
 
