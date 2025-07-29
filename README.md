@@ -46,7 +46,7 @@ also be launched manually with either:
 ```sh
 python -m arianna_core.server
 # or
-python arianna_core/server.py
+python arianna_core/server.py  # direct script execution now works
 ```
 
 ## Scientific Foundations
@@ -150,7 +150,7 @@ Hey LE, if you read this, greetings! May this little network become a seed for d
 
 ### Interactive Chat Interface
 
-The hub now includes a discreet chat cursor in `index.html`. When you type a message and press **Enter**, the page sends your words to the built‑in server. The mini network responds instantly with text generated from its corpus. Responses appear just below the input field, inviting quick resonance cycles.
+`index.html` now provides a minimalist chat box. Type a message and press **Enter** to send it to the built‑in server. A reply appears immediately below your line so you can iterate quickly.
 
 ### Conversation Logging
 

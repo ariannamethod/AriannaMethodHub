@@ -3,6 +3,9 @@ import threading
 from http.server import HTTPServer
 from functools import partial
 from pathlib import Path
+import subprocess
+import sys
+import time
 
 from arianna_core import server
 
@@ -46,3 +49,24 @@ def test_root_serves_index(monkeypatch):
     srv.server_close()
     assert status == 200
     assert "<!DOCTYPE html>" in body
+
+
+def test_server_runs_as_script(tmp_path):
+    port = 8765
+    proc = subprocess.Popen([
+        sys.executable,
+        "arianna_core/server.py",
+        str(port),
+    ], cwd=str(ROOT))
+    try:
+        time.sleep(0.3)
+        conn = http.client.HTTPConnection("localhost", port)
+        conn.request("GET", "/chat?msg=hi")
+        resp = conn.getresponse()
+        body = resp.read().decode()
+        conn.close()
+        assert resp.status == 200
+        assert body
+    finally:
+        proc.terminate()
+        proc.wait()
