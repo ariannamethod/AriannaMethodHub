@@ -40,6 +40,8 @@ For the interactive chat interface start the bundled server:
 ./serve.sh 8000
 ```
 
+Then open `http://localhost:8000/minimal.html` to try the minimal chat page.
+
 This invokes `python3 -m arianna_core.server` under the hood. The server can
 also be launched manually with either:
 

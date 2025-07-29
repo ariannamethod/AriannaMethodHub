@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Arianna Chat</title>
+    <style>
+        body { background:#000; color:#0f0; font-family:monospace; margin:0; }
+        #log { padding:1em; height:80vh; overflow-y:auto; }
+        #msg { width:100%; padding:.5em; border:0; background:#111; color:#0f0; }
+    </style>
+</head>
+<body>
+    <div id="log">Ready...</div>
+    <input id="msg" placeholder="Type and hit Enter" />
+    <script>
+    const log = document.getElementById('log');
+    const msg = document.getElementById('msg');
+    msg.addEventListener('keypress', e => {
+        if (e.key === 'Enter' && msg.value) {
+            const q = encodeURIComponent(msg.value);
+            fetch('/chat?msg=' + q)
+                .then(r => r.text())
+                .then(t => { log.innerHTML += '<br><b>&gt; ' + msg.value + '</b><br>' + t; })
+                .catch(err => { log.innerHTML += '<br>error'; console.error(err); });
+            msg.value = '';
+        }
+    });
+    </script>
+</body>
+</html>
