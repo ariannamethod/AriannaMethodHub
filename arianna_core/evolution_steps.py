@@ -1,7 +1,19 @@
+"""Registry of micro-evolution actions.
+
+Each list contains minimal templates executed by the corresponding
+subsystem.  Strings are intentionally short but should represent
+complete actions.
+"""
+
 from typing import Dict, List
 
-evolution_steps: Dict[str, List[str]] = {"chat": []}
-evolution_steps['chat'].append("hi-> '';\n     ")
-evolution_steps['chat'].append('x->hile core ')
-evolution_steps['chat'].append('x->ws thetic ')
-evolution_steps['chat'].append('hi->g Cycle()\n')
+
+evolution_steps: Dict[str, List[str]] = {
+    "chat": [
+        "init->start conversation",
+        "echo->repeat user input",
+        "mutate->run safe cycle",
+        "log->store interaction",
+    ]
+}
+
