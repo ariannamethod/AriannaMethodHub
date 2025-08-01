@@ -331,6 +331,6 @@ on static weights.
 
 ## License
 
-Source code is distributed under the [GNU GPLv3](LICENSE).
+Source code is distributed under the [GNU GPLv3](LICENSE) by **Oleg Ataeff & Arianna Method**.
 
 Essays and Method texts are distributed under the [Creative Commons BY-SA 4.0](LICENSE-text).
