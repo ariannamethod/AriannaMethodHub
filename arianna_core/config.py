@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 import os
 import pathlib
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11
+    import tomli as tomllib
 
 
 @dataclass
