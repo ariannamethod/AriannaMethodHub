@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from datetime import datetime
@@ -18,7 +19,7 @@ def entropy_mutation(model: dict, sample: str) -> dict:
     """Boost model frequencies for characters present in ``sample``."""
     if not model:
         return model
-    mutated = json.loads(json.dumps(model))
+    mutated = copy.deepcopy(model)
     data = mutated["model"] if "model" in mutated else mutated
     for ch in set(sample):
         for ctx in data.values():
