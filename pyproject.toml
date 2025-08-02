@@ -10,7 +10,7 @@ authors = [{ name = "Arianna Method" }]
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }
 requires-python = ">=3.8"
-dependencies = ["regex", "tomli; python_version < \"3.11\""]
+dependencies = ["regex", "numpy", "tomli; python_version < \"3.11\""]
 
 [tool.setuptools.packages.find]
 where = ["."]
