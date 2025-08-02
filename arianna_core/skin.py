@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 import logging
-from .mini_le import load_model, generate
+from .mini_le import get_mini_le
 from .config import is_enabled
 from .metrics import calculate_entropy, calculate_affinity
 
@@ -14,8 +14,9 @@ def evolve_skin(index_path: str = INDEX_PATH) -> str:
     if not is_enabled("skin"):
         logging.info("[skin] feature disabled, skipping")
         return ""
-    model = load_model() or {}
-    output = generate(model, length=100)
+    le = get_mini_le()
+    model = le.load_model() or {}
+    output = le.generate(model, length=100)
     ent = calculate_entropy(output)
     aff = calculate_affinity(output)
 

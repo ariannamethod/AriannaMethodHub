@@ -1,24 +1,23 @@
-import random
-import importlib
 import logging
+import random
 
-from typing import Any
 from .config import is_enabled
 from .metrics import calculate_entropy, calculate_affinity
+from .mini_le import get_mini_le, MiniLE
 
-_mini_le: Any = None
+_le: MiniLE | None = None
 MODEL_FILE: str = ""
 LOG_FILE: str = ""
 event_count = 0
 
 
 def _load_refs():
-    global _mini_le, MODEL_FILE, LOG_FILE
-    if _mini_le is None:
-        _mini_le = importlib.import_module("arianna_core.mini_le")
-        MODEL_FILE = _mini_le.MODEL_FILE
-        LOG_FILE = _mini_le.LOG_FILE
-    assert _mini_le is not None
+    global _le, MODEL_FILE, LOG_FILE
+    if _le is None:
+        _le = get_mini_le()
+        MODEL_FILE = _le.model_file
+        LOG_FILE = _le.log_file
+    assert _le is not None
 
 
 def trigger_pain(output: str, max_ent: float = 8.0) -> float:
@@ -33,15 +32,15 @@ def trigger_pain(output: str, max_ent: float = 8.0) -> float:
     ent = calculate_entropy(output)
     score = (1 - aff) * (max_ent - ent)
     if score > 0.5:
-        model = _mini_le.load_model()
+        model = _le.load_model()
         if model:
             m = model['model'] if 'model' in model else model
             for ctx in m:
                 for ch, v in m[ctx].items():
                     m[ctx][ch] = max(1, int(v * random.uniform(0.8, 1.2)))
-            with open(_mini_le.MODEL_FILE, 'w', encoding='utf-8') as f:
+            with open(_le.model_file, 'w', encoding='utf-8') as f:
                 dump(model, f)
-        with open(_mini_le.LOG_FILE, 'a', encoding='utf-8') as f:
+        with open(_le.log_file, 'a', encoding='utf-8') as f:
             f.write(f"Pain event: score {score:.2f}, mutated.\n")
         global event_count
         event_count += 1
@@ -54,9 +53,9 @@ def check_once() -> None:
         logging.info("[pain] feature disabled, skipping")
         return
     _load_refs()
-    model = _mini_le.load_model()
+    model = _le.load_model()
     if model:
-        out = _mini_le.generate(model, length=20)
+        out = _le.generate(model, length=20)
         trigger_pain(out)
 
 

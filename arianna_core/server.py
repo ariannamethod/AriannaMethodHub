@@ -5,17 +5,13 @@ import json
 import os
 import sys
 
-from typing import TYPE_CHECKING
-
 if __package__ is None:
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    import importlib
-    mini_le = importlib.import_module("arianna_core.mini_le")  # type: ignore
+    from arianna_core.mini_le import get_mini_le  # type: ignore
 else:
-    from . import mini_le
+    from .mini_le import get_mini_le
 
-if TYPE_CHECKING:
-    from . import mini_le as _mini_le_mod  # noqa: F401
+mini_le = get_mini_le()
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 
@@ -52,7 +48,7 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             data = {
                 "status": "alive",
-                "entropy": getattr(mini_le, "last_entropy", 0.0),
+                "entropy": mini_le.last_entropy,
             }
             self.wfile.write(json.dumps(data).encode("utf-8"))
         else:

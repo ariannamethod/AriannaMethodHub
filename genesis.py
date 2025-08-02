@@ -2,12 +2,16 @@ import os
 import json
 import random
 import argparse
-from arianna_core import mini_le, entropy_resonance
+from arianna_core.mini_le import get_mini_le
+from arianna_core import entropy_resonance
+
+
+le = get_mini_le()
 
 
 def load_logs():
     text = ""
-    for path in [mini_le.LOG_FILE, mini_le.HUMAN_LOG]:
+    for path in [le.log_file, le.human_log]:
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 text += f.read() + "\n"
@@ -15,18 +19,18 @@ def load_logs():
 
 
 def main(chaos: bool = False, entropy: bool = False):
-    base = mini_le.load_data()
+    base = le.load_data()
     logs = load_logs()
     if chaos:
         lines = logs.splitlines()
         random.shuffle(lines)
         logs = "\n".join(lines)
-    model = mini_le.train(base + logs)
+    model = le.train(base + logs)
     if entropy:
-        model = mini_le.reproduction_cycle()
+        model = le.reproduction_cycle()
         model, ent, changed = entropy_resonance.entropy_resonance_mutate(model)
         if changed:
-            with open(mini_le.MODEL_FILE, "w", encoding="utf-8") as f:
+            with open(le.model_file, "w", encoding="utf-8") as f:
                 json.dump(model, f)
 
 

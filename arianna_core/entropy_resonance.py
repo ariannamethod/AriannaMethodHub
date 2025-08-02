@@ -1,13 +1,14 @@
-import json
 import os
 from datetime import datetime
 import logging
+import json
 
-from . import mini_le
 from .config import is_enabled
 from .metrics import calculate_entropy
+from .mini_le import get_mini_le
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), "entropy.log")
+mini_le = get_mini_le()
 
 def resonance_check(entropy: float, threshold: float = 4.0) -> bool:
     """Return ``True`` if ``entropy`` exceeds ``threshold``."""
@@ -36,7 +37,7 @@ def entropy_resonance_mutate(model: dict) -> tuple[dict, float, bool]:
     if resonance_check(ent):
         mutated = entropy_mutation(model, sample)
         changed = mutated != model
-    mini_le.rotate_log(LOG_FILE, mini_le.LOG_MAX_BYTES)
+    mini_le.rotate_log(LOG_FILE, mini_le.log_max_bytes)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(
             f"{datetime.utcnow().isoformat()} entropy={ent:.2f} "
@@ -54,5 +55,5 @@ def run_once() -> None:
     mutated, ent, changed = entropy_resonance_mutate(model)
     mini_le.last_entropy = ent
     if changed:
-        with open(mini_le.MODEL_FILE, "w", encoding="utf-8") as f:
+        with open(mini_le.model_file, "w", encoding="utf-8") as f:
             json.dump(mutated, f)

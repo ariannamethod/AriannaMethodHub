@@ -1,29 +1,28 @@
 import json
 import random
 import os
-import importlib
 from datetime import datetime, timedelta
 import logging
-from typing import Any
 from arianna_core.pain import (
     calculate_entropy,
     calculate_affinity,
     trigger_pain,
 )
 from .config import is_enabled
+from .mini_le import get_mini_le, MiniLE
 
-_mini_le: Any = None
+_le: MiniLE | None = None
 MODEL_FILE: str = ""
 LOG_FILE: str = ""
 
 
 def _load_refs():
-    global _mini_le, MODEL_FILE, LOG_FILE
-    if _mini_le is None:
-        _mini_le = importlib.import_module("arianna_core.mini_le")
-        MODEL_FILE = _mini_le.MODEL_FILE
-        LOG_FILE = _mini_le.LOG_FILE
-    assert _mini_le is not None
+    global _le, MODEL_FILE, LOG_FILE
+    if _le is None:
+        _le = get_mini_le()
+        MODEL_FILE = _le.model_file
+        LOG_FILE = _le.log_file
+    assert _le is not None
 
 
 def lorenz_distort(
@@ -45,7 +44,7 @@ def predict_next(model: dict | None = None) -> str:
         return ""
     _load_refs()
     if model is None:
-        model = _mini_le.load_model()
+        model = _le.load_model()
     if not model:
         return ""
     m = model["model"] if "model" in model else model
@@ -54,8 +53,8 @@ def predict_next(model: dict | None = None) -> str:
         for k, freq in m.items()
     }
     struct = {"n": model.get("n", 2), "model": perturbed}
-    pred = _mini_le.generate(struct, length=100)
-    with open(_mini_le.LOG_FILE, "a", encoding="utf-8") as f:
+    pred = _le.generate(struct, length=100)
+    with open(_le.log_file, "a", encoding="utf-8") as f:
         f.write(
             f"{datetime.now().isoformat()} Prediction: {pred[:50]}... ent="
             f"{calculate_entropy(pred):.2f}\n"
@@ -68,9 +67,9 @@ def check_prediction(actual_output: str) -> None:
         logging.info("[sixth_sense] feature disabled, skipping")
         return
     _load_refs()
-    if not os.path.exists(_mini_le.LOG_FILE):
+    if not os.path.exists(_le.log_file):
         return
-    with open(_mini_le.LOG_FILE, "r", encoding="utf-8") as f:
+    with open(_le.log_file, "r", encoding="utf-8") as f:
         lines = f.readlines()
     preds = [line for line in lines if "Prediction:" in line]
     if not preds:
@@ -90,20 +89,20 @@ def check_prediction(actual_output: str) -> None:
     actual_aff = calculate_affinity(actual_output)
     delta = abs(pred_ent - actual_ent) + abs(pred_aff - actual_aff)
     if delta < 0.5:
-        model = _mini_le.load_model()
+        model = _le.load_model()
         if not model:
             return
         m = model["model"] if "model" in model else model
         for ctx in m:
             for ch in m[ctx]:
                 m[ctx][ch] += 1
-        with open(_mini_le.MODEL_FILE, "w", encoding="utf-8") as f:
+        with open(_le.model_file, "w", encoding="utf-8") as f:
             json.dump(model, f)
-        with open(_mini_le.LOG_FILE, "a", encoding="utf-8") as f:
+        with open(_le.log_file, "a", encoding="utf-8") as f:
             f.write("Prediction match: boosted.\n")
     else:
         trigger_pain(actual_output)
-        with open(_mini_le.LOG_FILE, "a", encoding="utf-8") as f:
+        with open(_le.log_file, "a", encoding="utf-8") as f:
             f.write(
                 f"Prediction mismatch: delta {delta:.2f}, pain triggered.\n"
             )
@@ -111,6 +110,6 @@ def check_prediction(actual_output: str) -> None:
 
 if __name__ == "__main__":
     _load_refs()
-    model = _mini_le.load_model() or {}
+    model = _le.load_model() or {}
     pred = predict_next(model)
     check_prediction("sim actual output resonance")
