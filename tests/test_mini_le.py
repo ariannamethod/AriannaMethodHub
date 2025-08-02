@@ -26,8 +26,31 @@ def test_chat_response(tmp_path, monkeypatch):
     (data_dir / "f.txt").write_text("abcabc", encoding="utf-8")
     monkeypatch.setattr(mini_le, "MODEL_FILE", str(model_file))
     monkeypatch.setattr(mini_le, "DATA_DIR", str(data_dir))
-    reply = mini_le.chat_response("a")
-    assert isinstance(reply, str) and reply
+
+    calls = {"load": 0, "train": 0}
+
+    def fake_load_model():
+        calls["load"] += 1
+        return None
+
+    def fake_train(text, n=2):
+        calls["train"] += 1
+        return {"n": n, "model": {"a": {"b": 1}}}
+
+    monkeypatch.setattr(mini_le, "load_model", fake_load_model)
+    monkeypatch.setattr(mini_le, "train", fake_train)
+    mini_le._cached_model = None
+
+    reply1 = mini_le.chat_response("a")
+    reply2 = mini_le.chat_response("a")
+
+    assert isinstance(reply1, str) and reply1
+    assert isinstance(reply2, str) and reply2
+    assert calls["load"] == 1
+    assert calls["train"] == 1
+
+    mini_le.chat_response("a", refresh=True)
+    assert calls["load"] == 2
 
 
 def test_reproduction_and_report(tmp_path, monkeypatch):
