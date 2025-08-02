@@ -22,10 +22,12 @@ def test_load_data(tmp_path, monkeypatch):
 def test_chat_response(tmp_path, monkeypatch):
     model_file = tmp_path / "model.txt"
     data_dir = tmp_path / "data"
+    db_file = tmp_path / "memory.db"
     data_dir.mkdir()
     (data_dir / "f.txt").write_text("abcabc", encoding="utf-8")
     monkeypatch.setattr(mini_le, "MODEL_FILE", str(model_file))
     monkeypatch.setattr(mini_le, "DATA_DIR", str(data_dir))
+    monkeypatch.setattr(mini_le, "DB_FILE", str(db_file))
 
     calls = {"load": 0, "train": 0}
 
