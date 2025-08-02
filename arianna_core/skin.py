@@ -1,30 +1,12 @@
 import os
-import math
 from datetime import datetime
 import logging
 from .mini_le import load_model, generate
 from .config import is_enabled
+from .metrics import calculate_entropy, calculate_affinity
 
 INDEX_PATH = os.path.join(os.path.dirname(__file__), "..", "index.html")
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
-
-WORDS = ['resonance', 'echo', 'thunder', 'love']
-
-
-def calculate_entropy(text: str) -> float:
-    """Return Shannon entropy of ``text``."""
-    if not text:
-        return 0.0
-    freq = {c: text.count(c) / len(text) for c in set(text)}
-    return -sum(p * math.log2(p) for p in freq.values())
-
-
-def affinity(text: str) -> float:
-    """Return proportion of characters belonging to affinity words."""
-    if not text:
-        return 0.0
-    lower = text.lower()
-    return sum(lower.count(w) for w in WORDS) / len(text)
 
 
 def evolve_skin(index_path: str = INDEX_PATH) -> str:
@@ -35,7 +17,7 @@ def evolve_skin(index_path: str = INDEX_PATH) -> str:
     model = load_model() or {}
     output = generate(model, length=100)
     ent = calculate_entropy(output)
-    aff = affinity(output)
+    aff = calculate_affinity(output)
 
     ratio = max(0.0, min(ent / 6.0, 1.0))
     r = int(255 * ratio)
