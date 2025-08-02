@@ -7,12 +7,7 @@ import sys
 
 from typing import TYPE_CHECKING
 
-if __package__ is None:
-    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    import importlib
-    mini_le = importlib.import_module("arianna_core.mini_le")  # type: ignore
-else:
-    from . import mini_le
+from . import mini_le
 
 if TYPE_CHECKING:
     from . import mini_le as _mini_le_mod  # noqa: F401
@@ -82,8 +77,8 @@ def serve(port: int = 8000) -> None:
     HTTPServer(("", port), handler).serve_forever()
 
 
-if __name__ == "__main__":
-    import sys
-
+if __name__ == "__main__":  # pragma: no cover
+    if __package__ is None or __package__ == "":
+        raise SystemExit("Run this module with `python -m arianna_core.server`.")
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
     serve(port)

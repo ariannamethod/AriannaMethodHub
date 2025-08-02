@@ -7,6 +7,7 @@ import subprocess
 import sys
 import time
 import json
+import os
 
 from arianna_core import server
 
@@ -82,13 +83,12 @@ def test_root_serves_index(monkeypatch):
     assert "<!DOCTYPE html>" in body
 
 
-def test_server_runs_as_script(tmp_path):
+def test_server_runs_as_module():
     port = 8765
-    proc = subprocess.Popen([
-        sys.executable,
-        "arianna_core/server.py",
-        str(port),
-    ], cwd=str(ROOT))
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "arianna_core.server", str(port)],
+        cwd=str(ROOT),
+    )
     try:
         time.sleep(0.3)
         conn = http.client.HTTPConnection("localhost", port)
@@ -105,12 +105,13 @@ def test_server_runs_as_script(tmp_path):
 
 def test_server_root_from_temp_dir(tmp_path):
     port = 8766
-    script = ROOT / "arianna_core" / "server.py"
-    proc = subprocess.Popen([
-        sys.executable,
-        str(script),
-        str(port),
-    ], cwd=str(tmp_path))
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT)
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "arianna_core.server", str(port)],
+        cwd=str(tmp_path),
+        env=env,
+    )
     try:
         time.sleep(0.3)
         conn = http.client.HTTPConnection("localhost", port)
