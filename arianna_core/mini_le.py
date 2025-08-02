@@ -5,6 +5,8 @@ import gzip
 import sqlite3
 from datetime import datetime
 
+from .memory.bone_memory import BoneMemory
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 MODEL_FILE = os.path.join(os.path.dirname(__file__), "model.txt")
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
@@ -14,11 +16,16 @@ LOG_KEEP = 3
 NGRAM_LEVEL = 2
 last_entropy: float = 0.0
 DB_FILE = os.path.join(os.path.dirname(__file__), "memory.db")
-LAST_REPRO_FILE = os.path.join(os.path.dirname(__file__), "last_reproduction.txt")
+LAST_REPRO_FILE = os.path.join(
+    os.path.dirname(__file__),
+    "last_reproduction.txt",
+)
 BAD_WORDS = {"badword", "curse"}
 blocked_messages = 0
 last_novelty = 0.0
 _cached_model: dict | None = None
+bone_memory = BoneMemory(limit=100)
+last_metabolic_push: float = 0.0
 
 
 def rotate_log(
@@ -110,12 +117,15 @@ def generate(model: dict, length: int = 80, seed: str | None = None) -> str:
 
 def chat_response(message: str, refresh: bool = False) -> str:
     """Return a generated reply to ``message`` using a cached model."""
-    global _cached_model
+    global _cached_model, last_metabolic_push
     if refresh or _cached_model is None:
         model = load_model()
         if model is None:
             model = train(load_data(), n=NGRAM_LEVEL)
         _cached_model = model
+    push = bone_memory.on_event("chat")
+    last_metabolic_push = push
+    metabolize_input(message, push=push)
     return generate(_cached_model, length=60, seed=message)
 
 
@@ -123,7 +133,10 @@ def _init_db() -> sqlite3.Connection:
     """Return a connection to the pattern memory database."""
     conn = sqlite3.connect(DB_FILE)
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS patterns (pattern TEXT PRIMARY KEY, count INTEGER)"
+        (
+            "CREATE TABLE IF NOT EXISTS patterns "
+            "(pattern TEXT PRIMARY KEY, count INTEGER)"
+        )
     )
     return conn
 
@@ -133,7 +146,7 @@ def update_pattern_memory(text: str, n: int = NGRAM_LEVEL) -> None:
     conn = _init_db()
     rows = []
     for i in range(len(text) - n + 1):
-        rows.append(text[i : i + n])
+        rows.append(text[i:i + n])
     with conn:
         for pat in rows:
             conn.execute(
@@ -159,14 +172,16 @@ def maintain_pattern_memory(threshold: int = 1, max_rows: int = 1000) -> None:
     conn.close()
 
 
-def metabolize_input(text: str, n: int = NGRAM_LEVEL) -> float:
-    """Return novelty score between 0 and 1 for ``text``."""
+def metabolize_input(
+    text: str, n: int = NGRAM_LEVEL, push: float = 1.0
+) -> float:
+    """Return novelty score between 0 and 1 for ``text`` scaled by ``push``."""
     global last_novelty
     conn = _init_db()
     unseen = 0
     total = 0
     for i in range(len(text) - n + 1):
-        pat = text[i : i + n]
+        pat = text[i:i + n]
         total += 1
         cur = conn.execute(
             "SELECT 1 FROM patterns WHERE pattern = ? LIMIT 1", (pat,)
@@ -175,6 +190,7 @@ def metabolize_input(text: str, n: int = NGRAM_LEVEL) -> float:
             unseen += 1
     conn.close()
     score = unseen / total if total else 0.0
+    score *= push
     last_novelty = score
     return score
 
