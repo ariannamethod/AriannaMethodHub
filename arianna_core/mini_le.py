@@ -18,6 +18,7 @@ LAST_REPRO_FILE = os.path.join(os.path.dirname(__file__), "last_reproduction.txt
 BAD_WORDS = {"badword", "curse"}
 blocked_messages = 0
 last_novelty = 0.0
+_cached_model: dict | None = None
 
 
 def rotate_log(
@@ -107,12 +108,15 @@ def generate(model: dict, length: int = 80, seed: str | None = None) -> str:
     return output[:length]
 
 
-def chat_response(message: str) -> str:
-    """Return a generated reply to ``message`` using the saved model."""
-    model = load_model()
-    if model is None:
-        model = train(load_data(), n=NGRAM_LEVEL)
-    return generate(model, length=60, seed=message)
+def chat_response(message: str, refresh: bool = False) -> str:
+    """Return a generated reply to ``message`` using a cached model."""
+    global _cached_model
+    if refresh or _cached_model is None:
+        model = load_model()
+        if model is None:
+            model = train(load_data(), n=NGRAM_LEVEL)
+        _cached_model = model
+    return generate(_cached_model, length=60, seed=message)
 
 
 def _init_db() -> sqlite3.Connection:
