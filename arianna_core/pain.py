@@ -1,10 +1,10 @@
-import math
 import random
 import importlib
 import logging
 
 from typing import Any
 from .config import is_enabled
+from .metrics import calculate_entropy, calculate_affinity
 
 _mini_le: Any = None
 MODEL_FILE: str = ""
@@ -19,22 +19,6 @@ def _load_refs():
         MODEL_FILE = _mini_le.MODEL_FILE
         LOG_FILE = _mini_le.LOG_FILE
     assert _mini_le is not None
-
-
-WORDS = ['resonance', 'echo', 'thunder', 'love']
-
-
-def calculate_affinity(output: str) -> float:
-    if not output:
-        return 0.0
-    return sum(output.lower().count(w) for w in WORDS) / len(output)
-
-
-def calculate_entropy(output: str) -> float:
-    if not output:
-        return 0.0
-    freq = {c: output.count(c) / len(output) for c in set(output)}
-    return -sum(p * math.log2(p) for p in freq.values())
 
 
 def trigger_pain(output: str, max_ent: float = 8.0) -> float:

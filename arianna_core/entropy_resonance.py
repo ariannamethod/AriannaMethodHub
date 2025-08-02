@@ -1,22 +1,13 @@
 import json
-import math
 import os
 from datetime import datetime
 import logging
 
 from . import mini_le
 from .config import is_enabled
+from .metrics import calculate_entropy
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), "entropy.log")
-
-
-def calculate_entropy(text: str) -> float:
-    """Return Shannon entropy of ``text``."""
-    if not text:
-        return 0.0
-    freq = {c: text.count(c) / len(text) for c in set(text)}
-    return -sum(p * math.log2(p) for p in freq.values())
-
 
 def resonance_check(entropy: float, threshold: float = 4.0) -> bool:
     """Return ``True`` if ``entropy`` exceeds ``threshold``."""
