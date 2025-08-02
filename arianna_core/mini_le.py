@@ -5,13 +5,14 @@ import gzip
 import sqlite3
 from datetime import datetime
 
+from arianna_core.config import settings
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 MODEL_FILE = os.path.join(os.path.dirname(__file__), "model.txt")
 LOG_FILE = os.path.join(os.path.dirname(__file__), "log.txt")
 HUMAN_LOG = os.path.join(os.path.dirname(__file__), "humanbridge.log")
 LOG_MAX_BYTES = 1_000_000
 LOG_KEEP = 3
-NGRAM_LEVEL = 2
 last_entropy: float = 0.0
 DB_FILE = os.path.join(os.path.dirname(__file__), "memory.db")
 LAST_REPRO_FILE = os.path.join(os.path.dirname(__file__), "last_reproduction.txt")
@@ -59,11 +60,13 @@ def load_data() -> str:
     return "\n".join(chunks)
 
 
-def train(text: str, n: int = NGRAM_LEVEL) -> dict:
+def train(text: str, n: int | None = None) -> dict:
     """Train an n-gram model from ``text`` and write it to ``MODEL_FILE``."""
+    if n is None:
+        n = settings.n_gram_level
     model: dict[str, dict[str, int]] = {}
     for i in range(len(text) - n + 1):
-        ctx = text[i:i + n - 1]
+        ctx = text[i : i + n - 1]
         ch = text[i + n - 1]
         freq = model.setdefault(ctx, {})
         freq[ch] = freq.get(ch, 0) + 1
@@ -111,7 +114,7 @@ def chat_response(message: str) -> str:
     """Return a generated reply to ``message`` using the saved model."""
     model = load_model()
     if model is None:
-        model = train(load_data(), n=NGRAM_LEVEL)
+        model = train(load_data())
     return generate(model, length=60, seed=message)
 
 
@@ -124,8 +127,10 @@ def _init_db() -> sqlite3.Connection:
     return conn
 
 
-def update_pattern_memory(text: str, n: int = NGRAM_LEVEL) -> None:
+def update_pattern_memory(text: str, n: int | None = None) -> None:
     """Add n-gram patterns from ``text`` to ``memory.db``."""
+    if n is None:
+        n = settings.n_gram_level
     conn = _init_db()
     rows = []
     for i in range(len(text) - n + 1):
@@ -155,8 +160,10 @@ def maintain_pattern_memory(threshold: int = 1, max_rows: int = 1000) -> None:
     conn.close()
 
 
-def metabolize_input(text: str, n: int = NGRAM_LEVEL) -> float:
+def metabolize_input(text: str, n: int | None = None) -> float:
     """Return novelty score between 0 and 1 for ``text``."""
+    if n is None:
+        n = settings.n_gram_level
     global last_novelty
     conn = _init_db()
     unseen = 0
@@ -206,7 +213,7 @@ def adaptive_mutation(model: dict) -> dict:
 def reproduction_cycle(threshold: int = 1, max_rows: int = 1000) -> dict:
     """Retrain model, update memory and apply mutation."""
     text = load_data()
-    model = train(text, n=NGRAM_LEVEL)
+    model = train(text)
     update_pattern_memory(text)
     maintain_pattern_memory(threshold=threshold, max_rows=max_rows)
     model = adaptive_mutation(model)
