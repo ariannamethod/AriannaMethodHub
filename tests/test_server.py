@@ -3,6 +3,7 @@ import threading
 from http.server import HTTPServer
 from functools import partial
 from pathlib import Path
+import sqlite3
 import subprocess
 import sys
 import time
@@ -158,3 +159,24 @@ def test_health_endpoint(monkeypatch):
     assert headers.get("Content-Type", "").startswith("application/json")
     data = json.loads(body)
     assert data["status"] == "alive"
+
+
+def test_event_logged(monkeypatch, tmp_path):
+    db_file = tmp_path / "events.db"
+    state = server.AppState(db_path=str(db_file))
+    server.app_state = state
+
+    srv = make_server(monkeypatch)
+    thread = threading.Thread(target=srv.handle_request)
+    thread.start()
+    status, _body, _headers = get(srv, "/chat?msg=hi")
+    thread.join()
+    srv.server_close()
+    assert status == 200
+
+    state.queue.join()
+    conn = sqlite3.connect(db_file)
+    cur = conn.execute("SELECT event_type, idx, ip FROM events")
+    rows = cur.fetchall()
+    conn.close()
+    assert rows == [("chat", 1, "127.0.0.1")]
