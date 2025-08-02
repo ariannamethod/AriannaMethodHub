@@ -1,6 +1,7 @@
 import random
 import importlib
 import logging
+from json import dump
 
 from typing import Any
 from .config import is_enabled
@@ -27,8 +28,6 @@ def trigger_pain(output: str, max_ent: float = 8.0) -> float:
         logging.info("[pain] feature disabled, skipping")
         return 0.0
     _load_refs()
-    from json import dump
-
     aff = calculate_affinity(output)
     ent = calculate_entropy(output)
     score = (1 - aff) * (max_ent - ent)
